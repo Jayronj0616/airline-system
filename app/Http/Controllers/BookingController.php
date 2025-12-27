@@ -419,7 +419,8 @@ class BookingController extends Controller
         }
 
         // Check if passengers exist
-        if ($booking->passengers()->count() === 0) {
+        $passengerCount = $booking->fresh()->passengers()->count();
+        if ($passengerCount === 0) {
             return redirect()->route('bookings.passengers', $booking)
                 ->with('error', 'Please enter passenger information first.');
         }

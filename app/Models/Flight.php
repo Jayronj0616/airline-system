@@ -14,7 +14,9 @@ class Flight extends Model
         'flight_number',
         'aircraft_id',
         'origin',
+        'origin_timezone',
         'destination',
+        'destination_timezone',
         'departure_time',
         'arrival_time',
         'status',
@@ -85,6 +87,26 @@ class Flight extends Model
     public function deniedBoardings()
     {
         return $this->hasMany(DeniedBoarding::class);
+    }
+
+    /**
+     * Get departure time in origin timezone.
+     */
+    public function getDepartureTimeLocalAttribute()
+    {
+        return $this->departure_time
+            ->copy()
+            ->setTimezone($this->origin_timezone ?? 'UTC');
+    }
+
+    /**
+     * Get arrival time in destination timezone.
+     */
+    public function getArrivalTimeLocalAttribute()
+    {
+        return $this->arrival_time
+            ->copy()
+            ->setTimezone($this->destination_timezone ?? 'UTC');
     }
 
     /**
