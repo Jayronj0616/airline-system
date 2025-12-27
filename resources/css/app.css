@@ -1,0 +1,118 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    /* Fix input text color issues */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="date"],
+    input[type="time"],
+    select,
+    textarea {
+        @apply text-gray-900;
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+        @apply text-gray-400;
+    }
+
+    /* Date input styling */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+        cursor: pointer;
+        opacity: 0.6;
+    }
+
+    input[type="date"]:hover::-webkit-calendar-picker-indicator {
+        opacity: 1;
+    }
+}
+
+@layer components {
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+        @apply bg-gray-100;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        @apply bg-gray-300 rounded-lg;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        @apply bg-gray-400;
+    }
+
+    /* Smooth transitions */
+    * {
+        @apply transition-colors duration-150;
+    }
+
+    /* Focus states */
+    button:focus,
+    a:focus,
+    input:focus,
+    select:focus,
+    textarea:focus {
+        @apply outline-none ring-2 ring-blue-500 ring-offset-2;
+    }
+
+    /* Disable transitions on load */
+    .preload * {
+        transition: none !important;
+    }
+}
+
+@layer utilities {
+    /* Custom gradient backgrounds */
+    .gradient-blue {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .gradient-sunset {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    /* Text gradients */
+    .text-gradient {
+        @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-blue-800;
+    }
+
+    /* Animations */
+    .animate-fade-in {
+        animation: fadeIn 0.5s ease-in;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .animate-slide-up {
+        animation: slideUp 0.4s ease-out;
+    }
+
+    @keyframes slideUp {
+        from {
+            transform: translateY(20px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+}

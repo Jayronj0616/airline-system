@@ -1,0 +1,69 @@
+
+    /**
+     * Flag flight as overbooked if confirmed bookings exceed physical capacity.
+     * This should be called at departure time or when checking in passengers.
+     * 
+     * @param Flight $flight
+     * @return bool True if flight needs manual resolution
+     */
+    public function flagOverbookedFlight(Flight $flight): bool
+    {
+        // Only flag if at departure time or within boarding window
+        $hoursUntilDeparture = $flight->hours_until_departure;
+        
+        if ($hoursUntilDeparture > 2) {
+            return false; // Too early to flag
+        }
+        
+        $overbookedCount = $this->getOverbookedCount($flight);
+        
+        if ($overbookedCount <= 0) {
+            return false; // Not overbooked
+        }
+        
+        // Flight is overbooked and needs resolution
+        // Update flight status if not already flagged
+        if ($flight->status === 'scheduled') {
+            $flight->update(['status' => 'boarding']);
+        }
+        
+        return true;
+    }
+
+    /**
+     * Create denied boarding records for passengers that need to be bumped.
+     * This is called manually by admin when resolving overbooking.
+     * 
+     * @param Flight $flight
+     * @param array $bookingIds Array of booking IDs to deny
+     * @param string $notes Optional notes
+     * @return int Number of denied boarding records created
+     */
+    public function createDeniedBoardingRecords(Flight $flight, array $bookingIds, string $notes = ''): int
+    {
+        $count = 0;
+        
+        foreach ($bookingIds as $bookingId) {
+            $booking = \App\Models\Booking::find($bookingId);
+            
+            if (!$booking || $booking->flight_id !== $flight->id) {
+                continue;
+            }
+            
+            \App\Models\DeniedBoarding::create([
+                'flight_id' => $flight->id,
+                'booking_id' => $booking->id,
+                'user_id' => $booking->user_id,
+                'fare_class_id' => $booking->fare_class_id,
+                'resolution_type' => 'pending',
+                'compensation_amount' => 0,
+                'notes' => $notes,
+                'denied_at' => now(),
+            ]);
+            
+            $count++;
+        }
+        
+        return $count;
+    }
+}

@@ -1,0 +1,268 @@
+<x-public-layout>
+    <div class="bg-white border-b border-gray-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <!-- Compact Search Form -->
+            <form method="GET" action="{{ route('flights.search') }}" class="bg-gray-50 rounded-xl p-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            name="origin" 
+                            value="{{ request('origin') }}"
+                            placeholder="From (e.g. MNL, Manila)"
+                            autocomplete="off"
+                            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-gray-900 placeholder-gray-500 text-sm"
+                        >
+                    </div>
+                    
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            name="destination" 
+                            value="{{ request('destination') }}"
+                            placeholder="To (e.g. HKG, Hong Kong)"
+                            autocomplete="off"
+                            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-gray-900 placeholder-gray-500 text-sm"
+                        >
+                    </div>
+                    
+                    <div class="relative">
+                        <input 
+                            type="date" 
+                            name="date" 
+                            value="{{ request('date') }}"
+                            min="{{ date('Y-m-d') }}"
+                            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-gray-900 text-sm"
+                        >
+                    </div>
+                </div>
+                
+                <!-- Advanced Filters -->
+                <div class="mt-3">
+                    <button type="button" id="toggle-filters" class="text-blue-600 hover:text-blue-700 text-sm font-semibold">
+                        + Advanced Filters
+                    </button>
+                </div>
+                
+                <div id="advanced-filters" class="hidden mt-3 p-4 bg-white rounded-lg border border-gray-200">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Price Range</label>
+                            <div class="flex gap-2">
+                                <input type="number" name="price_min" value="{{ request('price_min') }}" placeholder="Min" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                <input type="number" name="price_max" value="{{ request('price_max') }}" placeholder="Max" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Departure Time</label>
+                            <select name="time_of_day" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                <option value="">Any time</option>
+                                <option value="morning" {{ request('time_of_day') === 'morning' ? 'selected' : '' }}>Morning (6AM-12PM)</option>
+                                <option value="afternoon" {{ request('time_of_day') === 'afternoon' ? 'selected' : '' }}>Afternoon (12PM-6PM)</option>
+                                <option value="evening" {{ request('time_of_day') === 'evening' ? 'selected' : '' }}>Evening (6PM-12AM)</option>
+                                <option value="night" {{ request('time_of_day') === 'night' ? 'selected' : '' }}>Night (12AM-6AM)</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+                            <select name="sort_by" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                <option value="">Default</option>
+                                <option value="price_asc" {{ request('sort_by') === 'price_asc' ? 'selected' : '' }}>Price: Low to High</option>
+                                <option value="price_desc" {{ request('sort_by') === 'price_desc' ? 'selected' : '' }}>Price: High to Low</option>
+                                <option value="departure_asc" {{ request('sort_by') === 'departure_asc' ? 'selected' : '' }}>Departure: Earliest First</option>
+                                <option value="departure_desc" {{ request('sort_by') === 'departure_desc' ? 'selected' : '' }}>Departure: Latest First</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-lg transition text-sm">
+                        Search
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="py-8 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            @if(!$flights->isEmpty())
+            <!-- Results Header -->
+            <div class="mb-6">
+                <h1 class="text-2xl font-bold text-gray-900">{{ $flights->total() }} flights found</h1>
+                <p class="text-gray-600 mt-1">Prices updated in real-time</p>
+            </div>
+
+            <!-- Fare Class Legend -->
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-5 mb-6">
+                <h3 class="font-bold text-blue-900 mb-4 flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Fare classes explained
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    @foreach($fareClasses as $fareClass)
+                        @php
+                            $rules = $fareRules[$fareClass->id] ?? null;
+                        @endphp
+                        @if($rules)
+                        <div class="bg-white rounded-lg p-4">
+                            <h4 class="font-bold text-gray-900 mb-2">{{ $fareClass->name }}</h4>
+                            <ul class="space-y-1.5 text-sm text-gray-700">
+                                <li class="flex items-start">
+                                    <svg class="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+                                    </svg>
+                                    <span>{{ $rules['baggage'] }}</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <svg class="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+                                    </svg>
+                                    <span>{{ $rules['refundable'] }}</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <svg class="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+                                    </svg>
+                                    <span>{{ $rules['change_fee'] }}</span>
+                                </li>
+                            </ul>
+                        </div>
+                        @endif
+                    @endforeach
+                </div>
+            </div>
+
+            <!-- Flight Results -->
+            <div class="space-y-4">
+                @foreach($flights as $flight)
+                    <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition border border-gray-200">
+                        <div class="p-6">
+                            <!-- Flight Info -->
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex-1">
+                                    <div class="flex items-center space-x-4 mb-3">
+                                        <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
+                                            {{ $flight->flight_number }}
+                                        </span>
+                                        <span class="text-sm text-gray-500">{{ $flight->aircraft->model }}</span>
+                                    </div>
+                                    
+                                    <div class="flex items-center">
+                                        <!-- Origin -->
+                                        <div class="text-left">
+                                            <p class="text-2xl font-bold text-gray-900">{{ $flight->departure_time->format('H:i') }}</p>
+                                            <p class="text-sm font-medium text-gray-700">{{ $flight->origin }}</p>
+                                        </div>
+                                        
+                                        <!-- Flight Duration Visual -->
+                                        <div class="flex-1 mx-6">
+                                            <div class="relative">
+                                                <div class="border-t-2 border-gray-300"></div>
+                                                <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-100 px-3 py-1 rounded-full">
+                                                    <svg class="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
+                                                        <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
+                                                    </svg>
+                                                </div>
+                                            </div>
+                                            <p class="text-xs text-gray-500 text-center mt-2">Direct</p>
+                                        </div>
+                                        
+                                        <!-- Destination -->
+                                        <div class="text-right">
+                                            <p class="text-2xl font-bold text-gray-900">{{ $flight->arrival_time->format('H:i') }}</p>
+                                            <p class="text-sm font-medium text-gray-700">{{ $flight->destination }}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <p class="text-xs text-gray-500 mt-3">{{ $flight->departure_time->format('D, M j, Y') }}</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Pricing Options -->
+                            <div class="border-t border-gray-200 pt-4">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    @foreach($fareClasses as $fareClass)
+                                        @php
+                                            $key = "{$flight->id}_{$fareClass->id}";
+                                            $price = $flightPrices[$key] ?? null;
+                                            $trend = $priceTrends[$key] ?? '→';
+                                            $updated = $lastUpdated[$key] ?? 'Never';
+                                        @endphp
+                                        
+                                        <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-blue-500 hover:bg-blue-50/30 transition cursor-pointer group">
+                                            <div class="flex justify-between items-start mb-2">
+                                                <p class="text-sm font-bold text-gray-700 uppercase">{{ $fareClass->name }}</p>
+                                                @if($price)
+                                                    <span class="text-lg font-semibold {{ $trend === '↑' ? 'text-red-600' : ($trend === '↓' ? 'text-green-600' : 'text-gray-600') }}">
+                                                        {{ $trend }}
+                                                    </span>
+                                                @endif
+                                            </div>
+                                            
+                                            @if($price)
+                                                <div class="mb-3">
+                                                    <p class="text-3xl font-bold text-gray-900">₱{{ number_format($price, 0) }}</p>
+                                                    <p class="text-xs text-gray-500 mt-1">per person</p>
+                                                </div>
+                                                
+                                                <a href="{{ route('flights.show', $flight) }}" 
+                                                   class="block w-full text-center bg-blue-600 group-hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition text-sm">
+                                                    Select
+                                                </a>
+                                                
+                                                <p class="text-xs text-gray-400 mt-2 text-center">Updated {{ $updated }}</p>
+                                            @else
+                                                <p class="text-lg font-semibold text-red-600 mb-3">Sold out</p>
+                                                <button disabled class="w-full bg-gray-200 text-gray-500 font-semibold py-2.5 rounded-lg text-sm cursor-not-allowed">
+                                                    Unavailable
+                                                </button>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+            
+            <!-- Pagination -->
+            <div class="mt-8">
+                {{ $flights->links() }}
+            </div>
+            @else
+                <!-- No Results -->
+                <div class="bg-white rounded-xl shadow-sm p-12 text-center">
+                    <svg class="w-20 h-20 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-2">No flights found</h3>
+                    <p class="text-gray-600 mb-6">Try adjusting your search criteria or dates</p>
+                    <a href="{{ url('/') }}" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition">
+                        Start a new search
+                    </a>
+                </div>
+            @endif
+        </div>
+    </div>
+    
+    <script src="{{ asset('js/airport-autocomplete.js') }}"></script>
+    <script>
+        document.getElementById('toggle-filters').addEventListener('click', function() {
+            const filters = document.getElementById('advanced-filters');
+            if (filters.classList.contains('hidden')) {
+                filters.classList.remove('hidden');
+                this.textContent = '- Hide Filters';
+            } else {
+                filters.classList.add('hidden');
+                this.textContent = '+ Advanced Filters';
+            }
+        });
+    </script>
+</x-public-layout>
