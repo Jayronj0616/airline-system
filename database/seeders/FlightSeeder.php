@@ -152,20 +152,22 @@ class FlightSeeder extends Seeder
         ];
 
         $flightsCreated = 0;
-        $targetFlights = 200;
+        $targetFlights = 300; // Increased from 200
 
         foreach ($routes as $route) {
             if ($flightsCreated >= $targetFlights) break;
             
             [$origin, $destination, $duration, $econPrice, $bizPrice, $firstPrice] = $route;
             
-            // Create 1-2 flights per route over next 30 days
-            $flightsPerRoute = rand(1, 2);
+            // Create 2-3 flights per route over next 30 days (increased from 1-2)
+            $flightsPerRoute = rand(2, 3);
             
             for ($i = 0; $i < $flightsPerRoute; $i++) {
                 if ($flightsCreated >= $targetFlights) break;
                 
-                $departureTime = Carbon::now()->addDays(rand(1, 30))->setHour(rand(0, 23))->setMinute([0, 15, 30, 45][rand(0, 3)]);
+                // Spread flights more evenly across days
+                $dayOffset = ($i * 10) + rand(0, 10); // Space out flights
+                $departureTime = Carbon::now()->addDays($dayOffset % 30)->setHour(rand(6, 22))->setMinute([0, 15, 30, 45][rand(0, 3)]);
                 $arrivalTime = $departureTime->copy()->addHours(floor($duration))->addMinutes(($duration - floor($duration)) * 60);
 
                 $aircraft_model = $aircraft->random();

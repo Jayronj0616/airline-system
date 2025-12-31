@@ -121,6 +121,54 @@ class Booking extends Model
         return $this->hasMany(Passenger::class);
     }
 
+    /**
+     * Get all add-ons for this booking.
+     */
+    public function addOns()
+    {
+        return $this->hasMany(BookingAddOn::class);
+    }
+
+    /**
+     * Get check-in records for this booking.
+     */
+    public function checkIns()
+    {
+        return $this->hasMany(CheckIn::class);
+    }
+
+    /**
+     * Get boarding passes for this booking.
+     */
+    public function boardingPasses()
+    {
+        return $this->hasMany(BoardingPass::class);
+    }
+
+    /**
+     * Check if all passengers have checked in.
+     */
+    public function isCheckedIn()
+    {
+        return $this->checkIns()->count() === $this->passengers()->count();
+    }
+
+    /**
+     * Get total add-ons price.
+     */
+    public function getAddOnsTotalAttribute()
+    {
+        return $this->addOns()->sum(\DB::raw('price * quantity'));
+    }
+
+    /**
+     * Get grand total (booking + add-ons).
+     */
+    public function getGrandTotalAttribute()
+    {
+        return $this->total_price + $this->add_ons_total;
+    }
+
     // ==========================================
     // State Checking Methods
     // ==========================================

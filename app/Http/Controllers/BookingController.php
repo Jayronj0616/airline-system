@@ -15,7 +15,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
+use App\Mail\BookingConfirmation;
+use App\Mail\BookingCancellation;
+use Illuminate\Support\Facades\Mail;
 
 class BookingController extends Controller
 {
@@ -502,6 +504,16 @@ class BookingController extends Controller
                 $this->inventoryService->confirmBooking($booking);
             });
 
+            // Send confirmation email
+            try {
+                Mail::to($booking->passengers->first()->email)->send(new BookingConfirmation($booking));
+            } catch (\Exception $e) {
+                Log::channel('failures')->error('Failed to send confirmation email', [
+                    'booking_id' => $booking->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
             Log::channel('payments')->info('Payment successful', [
                 'user_id' => Auth::id(),
                 'booking_id' => $booking->id,
@@ -625,6 +637,16 @@ class BookingController extends Controller
             DB::transaction(function () use ($booking) {
                 $booking->cancel('Cancelled by user');
             });
+            
+            // Send cancellation email
+            try {
+                Mail::to($booking->passengers->first()->email)->send(new BookingCancellation($booking));
+            } catch (\Exception $e) {
+                Log::channel('failures')->error('Failed to send cancellation email', [
+                    'booking_id' => $booking->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
             
             Log::channel('bookings')->info('Booking cancelled', [
                 'user_id' => Auth::id(),

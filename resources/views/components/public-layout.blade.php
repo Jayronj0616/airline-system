@@ -35,6 +35,9 @@
                         <a href="{{ route('flights.search') }}" class="text-sm font-medium text-gray-700 hover:text-blue-600 transition">
                             Flights
                         </a>
+                        <a href="{{ route('manage-booking.retrieve') }}" class="text-sm font-medium text-gray-700 hover:text-blue-600 transition">
+                            Manage Booking
+                        </a>
                         @auth
                             <a href="{{ route('dashboard') }}" class="text-sm font-medium text-gray-700 hover:text-blue-600 transition">
                                 My Bookings

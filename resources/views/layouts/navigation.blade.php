@@ -18,6 +18,15 @@
                     <x-nav-link :href="route('flights.search')" :active="request()->routeIs('flights.*')">
                         {{ __('Flights') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('manage-booking.retrieve')" :active="request()->routeIs('manage-booking.*')">
+                        {{ __('Manage Booking') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('flight-status.index')" :active="request()->routeIs('flight-status.*')">
+                        {{ __('Flight Status') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('price-calendar.show')" :active="request()->routeIs('price-calendar.*')">
+                        {{ __('Price Calendar') }}
+                    </x-nav-link>
                     @if(Auth::check() && Auth::user()->role === 'admin')
                     <x-nav-link :href="route('admin.pricing.index')" :active="request()->routeIs('admin.pricing.*')">
                         {{ __('Pricing') }}
@@ -83,6 +92,15 @@
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('flights.search')" :active="request()->routeIs('flights.*')">
                 {{ __('Flights') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('manage-booking.retrieve')" :active="request()->routeIs('manage-booking.*')">
+                {{ __('Manage Booking') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('flight-status.index')" :active="request()->routeIs('flight-status.*')">
+                {{ __('Flight Status') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('price-calendar.show')" :active="request()->routeIs('price-calendar.*')">
+                {{ __('Price Calendar') }}
             </x-responsive-nav-link>
             @if(Auth::check() && Auth::user()->role === 'admin')
             <x-responsive-nav-link :href="route('admin.pricing.index')" :active="request()->routeIs('admin.pricing.*')">

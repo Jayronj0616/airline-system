@@ -23,9 +23,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('home');
-});
+Route::get('/', [\App\Http\Controllers\HomeController::class, 'index'])->name('home');
 
 
 Route::get('/dashboard', function () {
@@ -41,6 +39,14 @@ Route::middleware('auth')->group(function () {
 // Public flight routes
 Route::get('/flights/search', [FlightController::class, 'search'])->name('flights.search');
 Route::get('/flights/{flight}', [FlightController::class, 'show'])->name('flights.show');
+
+// Flight Status routes
+Route::get('/flight-status', [\App\Http\Controllers\FlightStatusController::class, 'index'])->name('flight-status.index');
+Route::get('/flight-status/search', [\App\Http\Controllers\FlightStatusController::class, 'search'])->name('flight-status.search');
+Route::get('/flight-status/{flight}', [\App\Http\Controllers\FlightStatusController::class, 'show'])->name('flight-status.show');
+
+// Price Calendar
+Route::get('/price-calendar', [\App\Http\Controllers\PriceCalendarController::class, 'show'])->name('price-calendar.show');
 
 // Booking routes (authentication required)
 Route::middleware(['auth'])->prefix('bookings')->name('bookings.')->group(function () {
@@ -74,6 +80,22 @@ Route::middleware(['auth'])->prefix('bookings')->name('bookings.')->group(functi
 Route::get('/send-test-email', function () {
     Mail::to('loki071723@gmail.com')->send(new TestEmail());
     return 'Test email sent!';
+});
+
+// Manage Booking routes (guest access)
+Route::prefix('manage-booking')->name('manage-booking.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\ManageBookingController::class, 'retrieve'])->name('retrieve');
+    Route::post('/show', [\App\Http\Controllers\ManageBookingController::class, 'show'])->name('show');
+    Route::get('/services', [\App\Http\Controllers\ManageBookingController::class, 'services'])->name('services');
+    Route::post('/services', [\App\Http\Controllers\ManageBookingController::class, 'storeServices'])->name('services.store');
+    Route::get('/check-in', [\App\Http\Controllers\ManageBookingController::class, 'checkIn'])->name('check-in');
+    Route::post('/check-in', [\App\Http\Controllers\ManageBookingController::class, 'processCheckIn'])->name('check-in.process');
+    Route::get('/boarding-pass', [\App\Http\Controllers\ManageBookingController::class, 'boardingPass'])->name('boarding-pass');
+    Route::get('/boarding-pass/download', [\App\Http\Controllers\ManageBookingController::class, 'downloadBoardingPass'])->name('boarding-pass.download');
+    Route::get('/edit-passengers', [\App\Http\Controllers\ManageBookingController::class, 'editPassengers'])->name('edit-passengers');
+    Route::post('/edit-passengers', [\App\Http\Controllers\ManageBookingController::class, 'updatePassengers'])->name('update-passengers');
+    Route::get('/edit-contact', [\App\Http\Controllers\ManageBookingController::class, 'editContact'])->name('edit-contact');
+    Route::post('/edit-contact', [\App\Http\Controllers\ManageBookingController::class, 'updateContact'])->name('update-contact');
 });
 
 

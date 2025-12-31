@@ -19,6 +19,8 @@ class Passenger extends Model
         'phone',
         'date_of_birth',
         'passport_number',
+        'meal_preference',
+        'baggage_allowance',
     ];
 
     protected $casts = [
@@ -47,5 +49,37 @@ class Passenger extends Model
     public function getFullNameAttribute()
     {
         return "{$this->first_name} {$this->last_name}";
+    }
+
+    /**
+     * Get check-in record for this passenger.
+     */
+    public function checkIn()
+    {
+        return $this->hasOne(CheckIn::class);
+    }
+
+    /**
+     * Get boarding pass for this passenger.
+     */
+    public function boardingPass()
+    {
+        return $this->hasOne(BoardingPass::class);
+    }
+
+    /**
+     * Check if passenger has checked in.
+     */
+    public function hasCheckedIn()
+    {
+        return $this->checkIn()->exists();
+    }
+
+    /**
+     * Check if passenger has boarding pass.
+     */
+    public function hasBoardingPass()
+    {
+        return $this->boardingPass()->exists();
     }
 }

@@ -29,6 +29,12 @@ class Kernel extends ConsoleKernel
         
         // Enforce overbooking rules every hour (Phase 6 Task 4)
         $schedule->command('overbooking:enforce-rules')->hourly();
+        
+        // Send check-in reminders (every 6 hours)
+        $schedule->command('bookings:send-checkin-reminders')->everySixHours();
+        
+        // Generate daily flights (runs daily at 2 AM to maintain 30-day window)
+        $schedule->command('flights:generate-daily')->dailyAt('02:00');
     }
 
     /**
