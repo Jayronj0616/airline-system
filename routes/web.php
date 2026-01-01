@@ -34,11 +34,47 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    
+    // Booking History
+    Route::get('/profile/booking-history', [ProfileController::class, 'bookingHistory'])->name('profile.booking-history');
+    Route::get('/profile/booking-history/download', [ProfileController::class, 'downloadBookingHistory'])->name('profile.booking-history.download');
+    Route::get('/profile/booking-history/export', [ProfileController::class, 'exportBookingHistory'])->name('profile.booking-history.export');
+    
+    // Favorite Routes
+    Route::post('/profile/favorite-routes/add', [ProfileController::class, 'addFavoriteRoute'])->name('profile.favorite-routes.add');
+    Route::delete('/profile/favorite-routes/remove', [ProfileController::class, 'removeFavoriteRoute'])->name('profile.favorite-routes.remove');
 });
 
 // Public flight routes
 Route::get('/flights/search', [FlightController::class, 'search'])->name('flights.search');
 Route::get('/flights/{flight}', [FlightController::class, 'show'])->name('flights.show');
+
+// Booking flow (guest accessible)
+Route::prefix('booking')->name('booking.')->group(function () {
+    Route::post('/review-fare', [\App\Http\Controllers\BookingFlowController::class, 'reviewFare'])->name('review-fare');
+    Route::post('/create-draft', [\App\Http\Controllers\BookingFlowController::class, 'createDraft'])->name('create-draft');
+    Route::get('/{booking}/passengers', [\App\Http\Controllers\BookingFlowController::class, 'passengers'])->name('passengers');
+    Route::post('/{booking}/passengers', [\App\Http\Controllers\BookingFlowController::class, 'storePassengers'])->name('passengers.store');
+    Route::get('/{booking}/payment', [\App\Http\Controllers\BookingFlowController::class, 'payment'])->name('payment');
+    Route::post('/{booking}/payment', [\App\Http\Controllers\BookingFlowController::class, 'processPayment'])->name('payment.process');
+    Route::get('/{booking}/confirmation', [\App\Http\Controllers\BookingFlowController::class, 'confirmation'])->name('confirmation');
+    Route::get('/{booking}', [\App\Http\Controllers\BookingFlowController::class, 'show'])->name('show');
+    
+    // Authenticated only
+    Route::middleware('auth')->group(function () {
+        Route::get('/', [\App\Http\Controllers\BookingFlowController::class, 'index'])->name('index');
+        Route::get('/{booking}/select-seats', [\App\Http\Controllers\BookingFlowController::class, 'selectSeats'])->name('select-seats');
+        Route::post('/{booking}/store-seats', [\App\Http\Controllers\BookingFlowController::class, 'storeSeats'])->name('store-seats');
+        Route::get('/{booking}/add-ons', [\App\Http\Controllers\BookingFlowController::class, 'addOns'])->name('add-ons');
+        Route::post('/{booking}/add-ons', [\App\Http\Controllers\BookingFlowController::class, 'storeAddOns'])->name('add-ons.store');
+    });
+});
+
+// OLD ROUTES - Redirect to new booking flow
+Route::redirect('/bookings', '/booking')->name('bookings.index');
+Route::get('/bookings/{booking}', function($booking) {
+    return redirect('/booking/' . $booking);
+})->name('bookings.show');
 
 // Flight Status routes
 Route::get('/flight-status', [\App\Http\Controllers\FlightStatusController::class, 'index'])->name('flight-status.index');
@@ -48,33 +84,7 @@ Route::get('/flight-status/{flight}', [\App\Http\Controllers\FlightStatusControl
 // Price Calendar
 Route::get('/price-calendar', [\App\Http\Controllers\PriceCalendarController::class, 'show'])->name('price-calendar.show');
 
-// Booking routes (authentication required)
-Route::middleware(['auth'])->prefix('bookings')->name('bookings.')->group(function () {
-    Route::get('/', [BookingController::class, 'index'])->name('index');
-    Route::post('/create', [BookingController::class, 'create'])->name('create');
-    Route::get('/{booking}', [BookingController::class, 'show'])->name('show');
-    
-    // Passenger information
-    Route::get('/{booking}/passengers', [BookingController::class, 'passengers'])->name('passengers');
-    Route::post('/{booking}/passengers', [BookingController::class, 'storePassengers'])->name('passengers.store');
-    
-    // Seat selection
-    Route::get('/{booking}/seats', [BookingController::class, 'seats'])->name('seats');
-    Route::post('/{booking}/seats', [BookingController::class, 'storeSeats'])->name('seats.store');
-    
-    // Payment
-    Route::get('/{booking}/payment', [BookingController::class, 'payment'])->name('payment');
-    Route::post('/{booking}/payment', [BookingController::class, 'processPayment'])->name('payment.process');
-    
-    // Confirmation
-    Route::get('/{booking}/confirmation', [BookingController::class, 'confirmation'])->name('confirmation');
-    
-    // Cancellation, Refund, and Changes
-    Route::get('/{booking}/cancel', [BookingController::class, 'showCancelForm'])->name('cancel.form');
-    Route::delete('/{booking}/cancel', [BookingController::class, 'cancel'])->name('cancel');
-    Route::post('/{booking}/refund', [BookingController::class, 'requestRefund'])->name('refund');
-    Route::post('/{booking}/change', [BookingController::class, 'requestChange'])->name('change');
-});
+// Old booking routes removed - using new booking flow only
 
 //email
 Route::get('/send-test-email', function () {
@@ -130,6 +140,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/fare-rules', [FareRulesController::class, 'index'])->name('fare-rules.index');
     Route::get('/fare-rules/{fareClass}/edit', [FareRulesController::class, 'edit'])->name('fare-rules.edit');
     Route::patch('/fare-rules/{fareClass}', [FareRulesController::class, 'update'])->name('fare-rules.update');
+    
+    // Advanced Analytics
+    Route::get('/analytics', [\App\Http\Controllers\Admin\AnalyticsController::class, 'index'])->name('analytics.index');
 });
 
 require __DIR__.'/auth.php';

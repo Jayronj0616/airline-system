@@ -26,7 +26,8 @@ class BookingController extends Controller
 
     public function __construct(InventoryService $inventoryService, FareRuleService $fareRuleService)
     {
-        $this->middleware('auth')->only(['index']);
+        // Allow guest bookings - only protect user-specific routes
+        $this->middleware('auth')->only(['index', 'showCancelForm', 'cancel', 'requestRefund', 'requestChange']);
         $this->inventoryService = $inventoryService;
         $this->fareRuleService = $fareRuleService;
     }
@@ -36,7 +37,13 @@ class BookingController extends Controller
      */
     public function seats(Booking $booking)
     {
-        if ($booking->user_id !== Auth::id()) {
+        // Check ownership (guest or logged in user)
+        if (Auth::check() && $booking->user_id !== Auth::id()) {
+            abort(403);
+        }
+        
+        // For guests, verify session
+        if (!Auth::check() && session('guest_booking_id') !== $booking->id) {
             abort(403);
         }
 
@@ -73,7 +80,13 @@ class BookingController extends Controller
      */
     public function storeSeats(StoreSeatsRequest $request, Booking $booking)
     {
-        if ($booking->user_id !== Auth::id()) {
+        // Check ownership (guest or logged in user)
+        if (Auth::check() && $booking->user_id !== Auth::id()) {
+            abort(403);
+        }
+        
+        // For guests, verify session
+        if (!Auth::check() && session('guest_booking_id') !== $booking->id) {
             abort(403);
         }
 
@@ -151,15 +164,6 @@ class BookingController extends Controller
             return back()->with('error', 'This flight has already departed.');
         }
 
-        // Store booking data in session for guest users
-        session([
-            'booking_data' => [
-                'flight_id' => $flight->id,
-                'fare_class_id' => $fareClass->id,
-                'seat_count' => $seatCount,
-            ]
-        ]);
-
         // Check capacity
         if (!$this->inventoryService->hasCapacity($flight, $fareClass, $seatCount)) {
             $available = $this->inventoryService->getAvailableSeats($flight, $fareClass);
@@ -174,12 +178,22 @@ class BookingController extends Controller
         }
 
         try {
-            // Generate temporary booking ID to redirect to passenger form
+            // Store booking data in session for both guests and logged-in users
+            // Actual booking with timer only created after passenger details submitted
+            session([
+                'booking_data' => [
+                    'flight_id' => $flight->id,
+                    'fare_class_id' => $fareClass->id,
+                    'seat_count' => $seatCount,
+                ]
+            ]);
+            
             $tempBookingId = 'temp_' . uniqid();
             session(['temp_booking_id' => $tempBookingId]);
 
-            Log::channel('bookings')->info('Guest booking initiated', [
+            Log::channel('bookings')->info('Booking initiated', [
                 'session_id' => session()->getId(),
+                'user_id' => Auth::id(),
                 'flight_id' => $flight->id,
                 'fare_class_id' => $fareClass->id,
                 'seat_count' => $seatCount,
@@ -190,6 +204,7 @@ class BookingController extends Controller
         } catch (\Exception $e) {
             Log::channel('failures')->error('Failed to initiate booking', [
                 'session_id' => session()->getId(),
+                'user_id' => Auth::id(),
                 'flight_id' => $flight->id,
                 'fare_class_id' => $fareClass->id,
                 'seat_count' => $seatCount,
@@ -244,7 +259,13 @@ class BookingController extends Controller
         // Handle existing bookings
         $booking = Booking::findOrFail($booking);
         
-        if ($booking->user_id !== Auth::id()) {
+        // Check ownership (guest or logged in user)
+        if (Auth::check() && $booking->user_id !== Auth::id()) {
+            abort(403);
+        }
+        
+        // For guests, verify session
+        if (!Auth::check() && session('guest_booking_id') !== $booking->id) {
             abort(403);
         }
 
@@ -290,7 +311,13 @@ class BookingController extends Controller
         } else {
             $booking = Booking::findOrFail($booking);
             
-            if ($booking->user_id !== Auth::id()) {
+            // Check ownership (guest or logged in user)
+            if (Auth::check() && $booking->user_id !== Auth::id()) {
+                abort(403);
+            }
+            
+            // For guests, verify session
+            if (!Auth::check() && session('guest_booking_id') !== $booking->id) {
                 abort(403);
             }
 
@@ -319,48 +346,32 @@ class BookingController extends Controller
         }
 
         try {
-            // If temp booking, create user and actual booking
-            if (str_starts_with($booking, 'temp_')) {
-                $user = DB::transaction(function () use ($validated, $bookingData) {
-                    // Create or get user
+            // Create booking and passengers in single transaction
+            DB::transaction(function () use ($validated, $bookingData, &$booking) {
+                // Get or create user
+                if (Auth::check()) {
+                    $user = Auth::user();
+                } else {
                     $user = \App\Models\User::firstOrCreate(
-                        ['email' => $validated['contact_email']],
+                        ['email' => $validated['passengers'][0]['email']],
                         [
                             'name' => $validated['passengers'][0]['first_name'] . ' ' . $validated['passengers'][0]['last_name'],
-                            'password' => bcrypt($validated['contact_password']),
+                            'password' => bcrypt(uniqid()),
                         ]
                     );
-                    
-                    return $user;
-                });
+                }
                 
-                // Login the user
-                Auth::login($user);
-                
-                // Create actual booking
+                // Create booking with 15-minute hold
                 $flight = Flight::findOrFail($bookingData['flight_id']);
                 $fareClass = FareClass::findOrFail($bookingData['fare_class_id']);
                 $seatCount = $bookingData['seat_count'];
                 
                 $booking = $this->inventoryService->holdSeats($user, $flight, $fareClass, $seatCount);
-            }
-            
-            DB::transaction(function () use ($booking, $validated) {
-                $availableSeats = $this->inventoryService->getAvailableSeatList(
-                    $booking->flight,
-                    $booking->fareClass
-                );
-
-                if ($availableSeats->count() < $booking->seat_count) {
-                    throw new \Exception('Not enough seats available. Please try again.');
-                }
-
-                foreach ($validated['passengers'] as $index => $passengerData) {
-                    $seat = $availableSeats[$index];
-                    $seat->hold(15);
-
+                
+                // Create passengers without seat assignment (seats selected later)
+                foreach ($validated['passengers'] as $passengerData) {
                     $booking->passengers()->create([
-                        'seat_id' => $seat->id,
+                        'seat_id' => null, // Seats assigned later
                         'first_name' => $passengerData['first_name'],
                         'last_name' => $passengerData['last_name'],
                         'email' => $passengerData['email'],
@@ -369,6 +380,9 @@ class BookingController extends Controller
                         'passport_number' => $passengerData['passport_number'] ?? null,
                     ]);
                 }
+                
+                // Store booking ID in session
+                session(['guest_booking_id' => $booking->id]);
             });
 
             // Clear session data
@@ -380,7 +394,8 @@ class BookingController extends Controller
                 'passenger_count' => count($validated['passengers']),
             ]);
 
-            return redirect()->route('bookings.seats', $booking);
+            // Skip seats, go directly to payment for now
+            return redirect()->route('bookings.payment', $booking);
 
         } catch (\Exception $e) {
             Log::channel('failures')->error('Failed to store passengers', [
@@ -397,12 +412,17 @@ class BookingController extends Controller
      */
     public function payment(Booking $booking)
     {
-        // Ensure user owns this booking
-        if ($booking->user_id !== Auth::id()) {
+        // Check ownership (guest or logged in user)
+        if (Auth::check() && $booking->user_id !== Auth::id()) {
             Log::channel('failures')->warning('Unauthorized payment page access', [
                 'user_id' => Auth::id(),
                 'booking_id' => $booking->id,
             ]);
+            abort(403);
+        }
+        
+        // For guests, verify session
+        if (!Auth::check() && session('guest_booking_id') !== $booking->id) {
             abort(403);
         }
 
@@ -418,13 +438,6 @@ class BookingController extends Controller
             }
             return redirect()->route('flights.search')
                 ->with('error', 'Your booking has expired. Please search for flights again.');
-        }
-
-        // Check if passengers exist
-        $passengerCount = $booking->fresh()->passengers()->count();
-        if ($passengerCount === 0) {
-            return redirect()->route('bookings.passengers', $booking)
-                ->with('error', 'Please enter passenger information first.');
         }
 
         // Check if already confirmed (idempotency check)
@@ -443,12 +456,17 @@ class BookingController extends Controller
      */
     public function processPayment(ProcessPaymentRequest $request, Booking $booking)
     {
-        // Ensure user owns this booking
-        if ($booking->user_id !== Auth::id()) {
+        // Check ownership (guest or logged in user)
+        if (Auth::check() && $booking->user_id !== Auth::id()) {
             Log::channel('failures')->warning('Unauthorized payment attempt', [
                 'user_id' => Auth::id(),
                 'booking_id' => $booking->id,
             ]);
+            abort(403);
+        }
+        
+        // For guests, verify session
+        if (!Auth::check() && session('guest_booking_id') !== $booking->id) {
             abort(403);
         }
 
@@ -542,8 +560,13 @@ class BookingController extends Controller
      */
     public function confirmation(Booking $booking)
     {
-        // Ensure user owns this booking
-        if ($booking->user_id !== Auth::id()) {
+        // Check ownership (guest or logged in user)
+        if (Auth::check() && $booking->user_id !== Auth::id()) {
+            abort(403);
+        }
+        
+        // For guests, verify session
+        if (!Auth::check() && session('guest_booking_id') !== $booking->id) {
             abort(403);
         }
 
@@ -562,8 +585,13 @@ class BookingController extends Controller
      */
     public function show(Booking $booking)
     {
-        // Ensure user owns this booking
-        if ($booking->user_id !== Auth::id()) {
+        // Check ownership (guest or logged in user)
+        if (Auth::check() && $booking->user_id !== Auth::id()) {
+            abort(403);
+        }
+        
+        // For guests, verify session
+        if (!Auth::check() && session('guest_booking_id') !== $booking->id) {
             abort(403);
         }
 

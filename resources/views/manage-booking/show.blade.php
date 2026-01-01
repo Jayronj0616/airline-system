@@ -161,13 +161,22 @@
                     @endif
 
                     <!-- Add Services -->
-                    <form method="GET" action="{{ route('manage-booking.services') }}">
-                        <input type="hidden" name="booking_reference" value="{{ $booking->booking_reference }}">
-                        <input type="hidden" name="last_name" value="{{ $booking->passengers->first()->last_name }}">
-                        <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-200">
-                            Add Services
+                    @php
+                        $canAddServices = $booking->flight->hours_until_departure > 3 && !$booking->flight->isPast();
+                    @endphp
+                    @if($canAddServices)
+                        <form method="GET" action="{{ route('manage-booking.services') }}">
+                            <input type="hidden" name="booking_reference" value="{{ $booking->booking_reference }}">
+                            <input type="hidden" name="last_name" value="{{ $booking->passengers->first()->last_name }}">
+                            <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-200">
+                                Add Services
+                            </button>
+                        </form>
+                    @else
+                        <button disabled class="w-full bg-gray-300 text-gray-600 font-semibold py-3 px-4 rounded-lg cursor-not-allowed">
+                            Add Services Unavailable
                         </button>
-                    </form>
+                    @endif
 
                     <!-- Edit Passengers -->
                     <form method="GET" action="{{ route('manage-booking.edit-passengers') }}">

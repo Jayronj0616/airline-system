@@ -70,6 +70,16 @@ class ManageBookingController extends Controller
             return back()->with('error', 'Only confirmed bookings can add services.');
         }
 
+        // Check if within 3 hours of departure
+        if ($booking->flight->hours_until_departure <= 3) {
+            return back()->with('error', 'Cannot add services within 3 hours of departure.');
+        }
+
+        // Check if flight has departed
+        if ($booking->flight->isPast()) {
+            return back()->with('error', 'Cannot add services for departed flights.');
+        }
+
         $prices = BookingAddOn::getPrices();
 
         return view('manage-booking.services', compact('booking', 'prices'));
@@ -80,28 +90,48 @@ class ManageBookingController extends Controller
      */
     public function storeServices(Request $request)
     {
-        $booking = $this->retrieveBooking($request);
+        $request->validate([
+            'booking_reference' => 'required|string',
+            'last_name' => 'required|string',
+            'services' => 'required|array|min:1',
+            'services.*.type' => 'required|in:baggage,meal,seat_upgrade,insurance,priority_boarding,lounge_access',
+            'services.*.description' => 'required|string',
+            'services.*.price' => 'required|numeric|min:0',
+            'services.*.quantity' => 'required|integer|min:1',
+        ]);
+
+        $booking = Booking::where('booking_reference', strtoupper($request->booking_reference))
+            ->whereHas('passengers', function ($query) use ($request) {
+                $query->where('last_name', 'LIKE', $request->last_name);
+            })
+            ->with(['passengers', 'flight'])
+            ->first();
         
         if (!$booking) {
             return redirect()->route('manage-booking.retrieve')
                 ->with('error', 'Booking not found.');
         }
 
-        $request->validate([
-            'services' => 'required|array',
-            'services.*.type' => 'required|in:baggage,meal,seat_upgrade,insurance,priority_boarding,lounge_access',
-            'services.*.description' => 'required|string',
-            'services.*.price' => 'required|numeric|min:0',
-            'services.*.quantity' => 'required|integer|min:1',
-            'services.*.passenger_id' => 'nullable|exists:passengers,id',
-        ]);
+        if (!$booking->isConfirmed()) {
+            return back()->with('error', 'Only confirmed bookings can add services.');
+        }
+
+        // Check if within 3 hours of departure
+        if ($booking->flight->hours_until_departure <= 3) {
+            return back()->with('error', 'Cannot add services within 3 hours of departure.');
+        }
+
+        // Check if flight has departed
+        if ($booking->flight->isPast()) {
+            return back()->with('error', 'Cannot add services for departed flights.');
+        }
 
         try {
             DB::transaction(function () use ($booking, $request) {
                 foreach ($request->services as $service) {
                     BookingAddOn::create([
                         'booking_id' => $booking->id,
-                        'passenger_id' => $service['passenger_id'] ?? null,
+                        'passenger_id' => null,
                         'type' => $service['type'],
                         'description' => $service['description'],
                         'price' => $service['price'],
@@ -116,14 +146,16 @@ class ManageBookingController extends Controller
                 'services_count' => count($request->services),
             ]);
 
-            return redirect()->route('manage-booking.show', [
-                'booking_reference' => $booking->booking_reference,
-                'last_name' => $booking->passengers->first()->last_name,
-            ])->with('success', 'Services added successfully!');
+            session()->flash('success', 'Services added successfully!');
+            return view('manage-booking.show', [
+                'booking' => $booking->load(['flight.aircraft', 'fareClass', 'passengers.seat', 'addOns', 'checkIns', 'boardingPasses']),
+                'checkInEligibility' => $this->checkInService->canCheckIn($booking),
+                'checkInStatus' => $this->checkInService->getCheckInStatus($booking),
+            ]);
 
         } catch (\Exception $e) {
             Log::channel('failures')->error('Failed to add services', [
-                'booking_id' => $booking->id,
+                'booking_id' => $booking->id ?? null,
                 'error' => $e->getMessage(),
             ]);
             return back()->with('error', 'Failed to add services. Please try again.');
@@ -140,6 +172,11 @@ class ManageBookingController extends Controller
         if (!$booking) {
             return redirect()->route('manage-booking.retrieve')
                 ->with('error', 'Booking not found.');
+        }
+
+        // Check if within 3 hours of departure
+        if ($booking->flight->hours_until_departure <= 3) {
+            return back()->with('error', 'Cannot check-in within 3 hours of departure. Please proceed to airport counter.');
         }
 
         $checkInEligibility = $this->checkInService->canCheckIn($booking);
@@ -163,6 +200,11 @@ class ManageBookingController extends Controller
                 ->with('error', 'Booking not found.');
         }
 
+        // Check if within 3 hours of departure
+        if ($booking->flight->hours_until_departure <= 3) {
+            return back()->with('error', 'Cannot check-in within 3 hours of departure. Please proceed to airport counter.');
+        }
+
         try {
             $this->checkInService->checkIn($booking);
 
@@ -171,10 +213,9 @@ class ManageBookingController extends Controller
                 'booking_reference' => $booking->booking_reference,
             ]);
 
-            return redirect()->route('manage-booking.boarding-pass', [
-                'booking_reference' => $booking->booking_reference,
-                'last_name' => $booking->passengers->first()->last_name,
-            ])->with('success', 'Check-in successful!');
+            $booking->load('boardingPasses.passenger.seat');
+            session()->flash('success', 'Check-in successful!');
+            return view('manage-booking.boarding-pass', compact('booking'));
 
         } catch (\Exception $e) {
             Log::channel('failures')->error('Check-in failed', [
@@ -284,10 +325,12 @@ class ManageBookingController extends Controller
                 'booking_reference' => $booking->booking_reference,
             ]);
 
-            return redirect()->route('manage-booking.show', [
-                'booking_reference' => $booking->booking_reference,
-                'last_name' => $booking->passengers->first()->last_name,
-            ])->with('success', 'Passenger information updated successfully!');
+            session()->flash('success', 'Passenger information updated successfully!');
+            return view('manage-booking.show', [
+                'booking' => $booking->load(['flight.aircraft', 'fareClass', 'passengers.seat', 'addOns', 'checkIns', 'boardingPasses']),
+                'checkInEligibility' => $this->checkInService->canCheckIn($booking),
+                'checkInStatus' => $this->checkInService->getCheckInStatus($booking),
+            ]);
 
         } catch (\Exception $e) {
             Log::channel('failures')->error('Failed to update passenger info', [
@@ -351,10 +394,12 @@ class ManageBookingController extends Controller
                 'booking_reference' => $booking->booking_reference,
             ]);
 
-            return redirect()->route('manage-booking.show', [
-                'booking_reference' => $booking->booking_reference,
-                'last_name' => $booking->passengers->first()->last_name,
-            ])->with('success', 'Contact information updated successfully!');
+            session()->flash('success', 'Contact information updated successfully!');
+            return view('manage-booking.show', [
+                'booking' => $booking->load(['flight.aircraft', 'fareClass', 'passengers.seat', 'addOns', 'checkIns', 'boardingPasses']),
+                'checkInEligibility' => $this->checkInService->canCheckIn($booking),
+                'checkInStatus' => $this->checkInService->getCheckInStatus($booking),
+            ]);
 
         } catch (\Exception $e) {
             Log::channel('failures')->error('Failed to update contact info', [

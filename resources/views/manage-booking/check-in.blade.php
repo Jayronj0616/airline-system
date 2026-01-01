@@ -62,7 +62,7 @@
                 </div>
 
                 <!-- Check-in Form -->
-                <form method="POST" action="{{ route('manage-booking.check-in.process') }}">
+                <form method="POST" action="{{ route('manage-booking.check-in.process') }}" id="checkInForm">
                     @csrf
                     <input type="hidden" name="booking_reference" value="{{ $booking->booking_reference }}">
                     <input type="hidden" name="last_name" value="{{ $booking->passengers->first()->last_name }}">
@@ -81,7 +81,7 @@
                            class="flex-1 bg-gray-200 text-gray-800 font-semibold py-3 px-4 rounded-lg hover:bg-gray-300 text-center">
                             Cancel
                         </a>
-                        <button type="submit" class="flex-1 bg-green-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-green-700">
+                        <button type="button" onclick="confirmCheckIn()" class="flex-1 bg-green-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-green-700">
                             Complete Check-In
                         </button>
                     </div>
@@ -89,4 +89,34 @@
             </div>
         </div>
     </div>
+    
+    <script>
+        function confirmCheckIn() {
+            const checkbox = document.querySelector('input[type="checkbox"]');
+            if (!checkbox.checked) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Confirmation Required',
+                    text: 'Please confirm that all passenger information is correct.',
+                    confirmButtonColor: '#2563eb'
+                });
+                return;
+            }
+            
+            Swal.fire({
+                title: 'Complete Check-In?',
+                text: 'You are about to complete online check-in. Boarding passes will be generated.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#16a34a',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Yes, Check In',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('checkInForm').submit();
+                }
+            });
+        }
+    </script>
 </x-public-layout>

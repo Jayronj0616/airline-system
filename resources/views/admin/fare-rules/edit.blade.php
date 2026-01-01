@@ -303,6 +303,7 @@
 
         // Validate JSON on form submit
         document.getElementById('fareRulesForm').addEventListener('submit', function(e) {
+            e.preventDefault();
             const textarea = document.getElementById('rules_json');
             const errorDiv = document.getElementById('json-error');
             
@@ -311,12 +312,42 @@
                     JSON.parse(textarea.value);
                     errorDiv.classList.add('hidden');
                     errorDiv.textContent = '';
+                    
+                    // Show confirmation
+                    Swal.fire({
+                        title: 'Update Fare Rules?',
+                        text: 'This will update the fare rules for this class and affect all future bookings.',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonColor: '#4f46e5',
+                        cancelButtonColor: '#6b7280',
+                        confirmButtonText: 'Yes, Update Rules',
+                        cancelButtonText: 'Cancel'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            e.target.submit();
+                        }
+                    });
                 } catch (error) {
-                    e.preventDefault();
                     errorDiv.classList.remove('hidden');
                     errorDiv.textContent = 'Invalid JSON: ' + error.message;
                     textarea.focus();
                 }
+            } else {
+                Swal.fire({
+                    title: 'Update Fare Rules?',
+                    text: 'This will update the fare rules for this class and affect all future bookings.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#4f46e5',
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'Yes, Update Rules',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        e.target.submit();
+                    }
+                });
             }
         });
     </script>

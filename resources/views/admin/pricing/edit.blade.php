@@ -49,7 +49,7 @@
                 <div class="p-6">
                     <h3 class="text-lg font-semibold mb-4">Base Fare Prices</h3>
                     
-                    <form method="POST" action="{{ route('admin.pricing.update', $flight) }}" class="space-y-6">
+                    <form method="POST" action="{{ route('admin.pricing.update', $flight) }}" class="space-y-6" id="pricingForm">
                         @csrf
                         @method('PATCH')
 
@@ -122,7 +122,7 @@
                                class="text-gray-600 hover:text-gray-900">
                                 ← Back to List
                             </a>
-                            <button type="submit" 
+                            <button type="button" onclick="confirmPriceUpdate()"
                                     class="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                 Update Base Fares
                             </button>
@@ -132,4 +132,25 @@
             </div>
         </div>
     </div>
+    
+    @push('scripts')
+    <script>
+        function confirmPriceUpdate() {
+            Swal.fire({
+                title: 'Update Base Fares?',
+                text: 'This will update the base fares and recalculate prices for all fare classes.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#4f46e5',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Yes, Update Fares',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('pricingForm').submit();
+                }
+            });
+        }
+    </script>
+    @endpush
 </x-app-layout>

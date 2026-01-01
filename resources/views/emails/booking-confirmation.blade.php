@@ -169,7 +169,7 @@
                 </div>
                 <div class="info-item">
                     <div class="info-label">Total Paid</div>
-                    <div class="info-value">${{ number_format($booking->total_amount, 2) }}</div>
+                    <div class="info-value">₱{{ number_format($booking->total_price, 2) }}</div>
                 </div>
             </div>
         </div>

@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-public-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
             {{ __('Booking Confirmed') }}
@@ -136,4 +136,4 @@
             </div>
         </div>
     </div>
-</x-app-layout>
+</x-public-layout>

@@ -45,7 +45,7 @@ class FlightController extends Controller
             $query->whereDate('departure_time', $date);
         }
         
-        // Filter by time of day
+        // Filter by departure time of day
         if ($request->filled('time_of_day')) {
             switch ($request->time_of_day) {
                 case 'morning':
@@ -67,12 +67,27 @@ class FlightController extends Controller
             }
         }
         
-        // Sort
+        // Filter by fare class availability
+        if ($request->filled('fare_class')) {
+            $fareClassId = $request->fare_class;
+            $query->whereHas('seats', function($q) use ($fareClassId) {
+                $q->where('fare_class_id', $fareClassId)
+                  ->where('status', 'available');
+            });
+        }
+        
+        // Sort by duration or departure time
         if ($request->filled('sort_by')) {
             switch ($request->sort_by) {
                 case 'price_asc':
                 case 'price_desc':
                     // Will sort after price calculation
+                    break;
+                case 'duration_asc':
+                    $query->orderByRaw('TIMESTAMPDIFF(MINUTE, departure_time, arrival_time) ASC');
+                    break;
+                case 'duration_desc':
+                    $query->orderByRaw('TIMESTAMPDIFF(MINUTE, departure_time, arrival_time) DESC');
                     break;
                 case 'departure_asc':
                     $query->orderBy('departure_time', 'asc');
@@ -87,7 +102,7 @@ class FlightController extends Controller
             $query->orderBy('departure_time');
         }
         
-        $flights = $query->paginate(10);
+        $flights = $query->paginate(10)->withQueryString();
         $fareClasses = FareClass::with('fareRule')->get();
 
         // Track search activity for demand calculation (Phase 5 Task 2 & 7)
@@ -130,17 +145,24 @@ class FlightController extends Controller
             }
         }
         
+        // Store min/max prices for each flight
+        $flightMinPrices = [];
+        foreach ($flights as $flight) {
+            $minPrice = null;
+            foreach ($fareClasses as $fareClass) {
+                $key = "{$flight->id}_{$fareClass->id}";
+                $price = $flightPrices[$key];
+                if ($price && ($minPrice === null || $price < $minPrice)) {
+                    $minPrice = $price;
+                }
+            }
+            $flightMinPrices[$flight->id] = $minPrice;
+        }
+        
         // Filter by price range
         if ($request->filled('price_min') || $request->filled('price_max')) {
-            $flights = $flights->filter(function($flight) use ($request, $fareClasses, $flightPrices) {
-                $minPrice = null;
-                foreach ($fareClasses as $fareClass) {
-                    $key = "{$flight->id}_{$fareClass->id}";
-                    $price = $flightPrices[$key];
-                    if ($price && ($minPrice === null || $price < $minPrice)) {
-                        $minPrice = $price;
-                    }
-                }
+            $flights = $flights->filter(function($flight) use ($request, $flightMinPrices) {
+                $minPrice = $flightMinPrices[$flight->id] ?? null;
                 
                 if ($minPrice === null) return false;
                 
@@ -156,23 +178,9 @@ class FlightController extends Controller
         
         // Sort by price if requested
         if ($request->filled('sort_by') && in_array($request->sort_by, ['price_asc', 'price_desc'])) {
-            $flights = $flights->sort(function($a, $b) use ($fareClasses, $flightPrices, $request) {
-                $minPriceA = null;
-                $minPriceB = null;
-                
-                foreach ($fareClasses as $fareClass) {
-                    $keyA = "{$a->id}_{$fareClass->id}";
-                    $keyB = "{$b->id}_{$fareClass->id}";
-                    $priceA = $flightPrices[$keyA];
-                    $priceB = $flightPrices[$keyB];
-                    
-                    if ($priceA && ($minPriceA === null || $priceA < $minPriceA)) {
-                        $minPriceA = $priceA;
-                    }
-                    if ($priceB && ($minPriceB === null || $priceB < $minPriceB)) {
-                        $minPriceB = $priceB;
-                    }
-                }
+            $flights = $flights->sort(function($a, $b) use ($flightMinPrices, $request) {
+                $minPriceA = $flightMinPrices[$a->id] ?? PHP_INT_MAX;
+                $minPriceB = $flightMinPrices[$b->id] ?? PHP_INT_MAX;
                 
                 if ($request->sort_by === 'price_asc') {
                     return $minPriceA <=> $minPriceB;
@@ -188,7 +196,8 @@ class FlightController extends Controller
             'flightPrices',
             'priceTrends',
             'lastUpdated',
-            'fareRules'
+            'fareRules',
+            'flightMinPrices'
         ));
     }
 
@@ -197,6 +206,11 @@ class FlightController extends Controller
      */
     public function show(Flight $flight)
     {
+        // Check if flight has departed
+        if ($flight->isPast()) {
+            return redirect()->route('flights.search')->with('error', 'This flight has already departed.');
+        }
+
         $flight->load('aircraft', 'seats.fareClass');
         $fareClasses = FareClass::with('fareRule')->get();
 

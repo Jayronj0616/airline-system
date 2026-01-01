@@ -1,4 +1,33 @@
 <x-public-layout>
+    <!-- Success/Error Messages -->
+    @if(session('success'))
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+            <div class="bg-green-50 border-l-4 border-green-400 p-4 mb-4">
+                <p class="text-green-700">{{ session('success') }}</p>
+            </div>
+        </div>
+    @endif
+    
+    @if(session('error'))
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+            <div class="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
+                <p class="text-red-700">{{ session('error') }}</p>
+            </div>
+        </div>
+    @endif
+    
+    @if($errors->any())
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+            <div class="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
+                <ul class="list-disc list-inside text-red-700">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        </div>
+    @endif
+    
     <div class="bg-white border-b border-gray-200 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <!-- Compact Search Form -->
@@ -45,7 +74,7 @@
                 </div>
                 
                 <div id="advanced-filters" class="hidden mt-3 p-4 bg-white rounded-lg border border-gray-200">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Price Range</label>
                             <div class="flex gap-2">
@@ -66,13 +95,25 @@
                         </div>
                         
                         <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Fare Class</label>
+                            <select name="fare_class" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                <option value="">All classes</option>
+                                @foreach($fareClasses as $fc)
+                                    <option value="{{ $fc->id }}" {{ request('fare_class') == $fc->id ? 'selected' : '' }}>{{ $fc->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        
+                        <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
                             <select name="sort_by" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                                <option value="">Default</option>
-                                <option value="price_asc" {{ request('sort_by') === 'price_asc' ? 'selected' : '' }}>Price: Low to High</option>
-                                <option value="price_desc" {{ request('sort_by') === 'price_desc' ? 'selected' : '' }}>Price: High to Low</option>
-                                <option value="departure_asc" {{ request('sort_by') === 'departure_asc' ? 'selected' : '' }}>Departure: Earliest First</option>
-                                <option value="departure_desc" {{ request('sort_by') === 'departure_desc' ? 'selected' : '' }}>Departure: Latest First</option>
+                                <option value="">Default (Time)</option>
+                                <option value="price_asc" {{ request('sort_by') === 'price_asc' ? 'selected' : '' }}>Price: Low → High</option>
+                                <option value="price_desc" {{ request('sort_by') === 'price_desc' ? 'selected' : '' }}>Price: High → Low</option>
+                                <option value="duration_asc" {{ request('sort_by') === 'duration_asc' ? 'selected' : '' }}>Duration: Shortest</option>
+                                <option value="duration_desc" {{ request('sort_by') === 'duration_desc' ? 'selected' : '' }}>Duration: Longest</option>
+                                <option value="departure_asc" {{ request('sort_by') === 'departure_asc' ? 'selected' : '' }}>Departure: Earliest</option>
+                                <option value="departure_desc" {{ request('sort_by') === 'departure_desc' ? 'selected' : '' }}>Departure: Latest</option>
                             </select>
                         </div>
                     </div>
@@ -92,8 +133,18 @@
             @if(!$flights->isEmpty())
             <!-- Results Header -->
             <div class="mb-6">
-                <h1 class="text-2xl font-bold text-gray-900">{{ $flights->total() }} flights found</h1>
-                <p class="text-gray-600 mt-1">Prices updated in real-time</p>
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">{{ $flights->total() }} flights found</h1>
+                        <p class="text-gray-600 mt-1">Prices updated in real-time</p>
+                    </div>
+                    @if(request()->hasAny(['price_min', 'price_max', 'time_of_day', 'fare_class', 'sort_by']))
+                    <a href="{{ route('flights.search', request()->only(['origin', 'destination', 'date'])) }}" 
+                       class="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                        Clear Filters
+                    </a>
+                    @endif
+                </div>
             </div>
 
             <!-- Fare Class Legend -->
@@ -170,7 +221,12 @@
                                                     </svg>
                                                 </div>
                                             </div>
-                                            <p class="text-xs text-gray-500 text-center mt-2">Direct</p>
+                                            @php
+                                                $duration = $flight->departure_time->diffInMinutes($flight->arrival_time);
+                                                $hours = floor($duration / 60);
+                                                $minutes = $duration % 60;
+                                            @endphp
+                                            <p class="text-xs text-gray-500 text-center mt-2">{{ $hours }}h {{ $minutes }}m • Direct</p>
                                         </div>
                                         
                                         <!-- Destination -->
@@ -211,9 +267,27 @@
                                                     <p class="text-xs text-gray-500 mt-1">per person</p>
                                                 </div>
                                                 
-                                                <a href="{{ route('flights.show', $flight) }}" 
-                                                   class="block w-full text-center bg-blue-600 group-hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition text-sm">
-                                                    Select
+                                                <form action="{{ route('booking.create-draft') }}" method="POST" class="mb-2">
+                                                    @csrf
+                                                    <input type="hidden" name="flight_id" value="{{ $flight->id }}">
+                                                    <input type="hidden" name="fare_class_id" value="{{ $fareClass->id }}">
+                                                    
+                                                    <div class="mb-3">
+                                                        <label class="block text-xs font-medium text-gray-700 mb-1">Passengers</label>
+                                                        <select name="passenger_count" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                                                            @for($i = 1; $i <= 9; $i++)
+                                                                <option value="{{ $i }}">{{ $i }} {{ $i === 1 ? 'passenger' : 'passengers' }}</option>
+                                                            @endfor
+                                                        </select>
+                                                    </div>
+                                                    
+                                                    <button type="submit" class="w-full text-center bg-blue-600 group-hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition text-sm">
+                                                        Book Now
+                                                    </button>
+                                                </form>
+                                                
+                                                <a href="{{ route('flights.show', $flight) }}" class="block text-center text-xs text-blue-600 hover:text-blue-700">
+                                                    View details
                                                 </a>
                                                 
                                                 <p class="text-xs text-gray-400 mt-2 text-center">Updated {{ $updated }}</p>

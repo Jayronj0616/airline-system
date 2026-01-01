@@ -15,6 +15,9 @@ class Booking extends Model
     protected $fillable = [
         'booking_reference',
         'user_id',
+        'contact_email',
+        'contact_phone',
+        'contact_name',
         'flight_id',
         'fare_class_id',
         'status',
@@ -174,6 +177,14 @@ class Booking extends Model
     // ==========================================
 
     /**
+     * Check if booking is in DRAFT state.
+     */
+    public function isDraft(): bool
+    {
+        return $this->status === 'draft';
+    }
+
+    /**
      * Check if booking is in HELD state.
      */
     public function isHeld(): bool
@@ -182,11 +193,27 @@ class Booking extends Model
     }
 
     /**
-     * Check if booking is in CONFIRMED state.
+     * Check if booking is in CONFIRMED_UNPAID state.
+     */
+    public function isConfirmedUnpaid(): bool
+    {
+        return $this->status === 'confirmed_unpaid';
+    }
+
+    /**
+     * Check if booking is in CONFIRMED_PAID state.
+     */
+    public function isConfirmedPaid(): bool
+    {
+        return $this->status === 'confirmed_paid';
+    }
+
+    /**
+     * Check if booking is in any CONFIRMED state.
      */
     public function isConfirmed(): bool
     {
-        return $this->status === 'confirmed';
+        return in_array($this->status, ['confirmed_unpaid', 'confirmed_paid']);
     }
 
     /**

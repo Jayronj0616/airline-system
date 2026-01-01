@@ -11,7 +11,7 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route('manage-booking.update-contact') }}">
+                <form method="POST" action="{{ route('manage-booking.update-contact') }}" id="updateContactForm">
                     @csrf
                     <input type="hidden" name="booking_reference" value="{{ $booking->booking_reference }}">
                     <input type="hidden" name="last_name" value="{{ $booking->passengers->first()->last_name }}">
@@ -65,7 +65,7 @@
                            class="flex-1 bg-gray-200 text-gray-800 font-semibold py-3 px-4 rounded-lg hover:bg-gray-300 text-center">
                             Cancel
                         </a>
-                        <button type="submit" class="flex-1 bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-blue-700">
+                        <button type="button" onclick="confirmUpdateContact()" class="flex-1 bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-blue-700">
                             Update Contact
                         </button>
                     </div>
@@ -73,4 +73,23 @@
             </div>
         </div>
     </div>
+    
+    <script>
+        function confirmUpdateContact() {
+            Swal.fire({
+                title: 'Update Contact Information?',
+                text: 'All booking communications will be sent to the new email address.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#2563eb',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Yes, Update',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('updateContactForm').submit();
+                }
+            });
+        }
+    </script>
 </x-public-layout>

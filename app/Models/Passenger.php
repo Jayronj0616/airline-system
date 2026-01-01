@@ -18,6 +18,8 @@ class Passenger extends Model
         'email',
         'phone',
         'date_of_birth',
+        'gender',
+        'nationality',
         'passport_number',
         'meal_preference',
         'baggage_allowance',

@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-public-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
             {{ __('Flight Details') }} - {{ $flight->flight_number }}
@@ -164,28 +164,28 @@
                                         </div>
                                         
                                         <!-- Booking Form -->
-                                        <form action="{{ route('bookings.create') }}" method="POST">
-                                        @csrf
-                                        <input type="hidden" name="flight_id" value="{{ $flight->id }}">
-                                        <input type="hidden" name="fare_class_id" value="{{ $fareClass->id }}">
-                                        
-                                        <div class="mb-3">
-                                        <label for="seat_count_{{ $fareClass->id }}" class="block text-sm text-gray-600 mb-1">
-                                        Number of Passengers
-                                        </label>
-                                        <select name="seat_count" 
-                                            id="seat_count_{{ $fareClass->id }}"
-                                        class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                        @for($i = 1; $i <= min(9, $available); $i++)
-                                        <option value="{{ $i }}">{{ $i }}</option>
-                                        @endfor
-                                        </select>
-                                        </div>
-                                        
-                                        <button type="submit" 
-                                            class="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                        Book Now
-                                        </button>
+                                        <form action="{{ route('booking.review-fare') }}" method="POST">
+                                            @csrf
+                                            <input type="hidden" name="flight_id" value="{{ $flight->id }}">
+                                            <input type="hidden" name="fare_class_id" value="{{ $fareClass->id }}">
+                                            
+                                            <div class="mb-3">
+                                                <label for="passenger_count_{{ $fareClass->id }}" class="block text-sm text-gray-600 mb-1">
+                                                    Number of Passengers
+                                                </label>
+                                                <select name="passenger_count" 
+                                                    id="passenger_count_{{ $fareClass->id }}"
+                                                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                                    @for($i = 1; $i <= min(9, $available); $i++)
+                                                        <option value="{{ $i }}">{{ $i }}</option>
+                                                    @endfor
+                                                </select>
+                                            </div>
+                                            
+                                            <button type="submit" 
+                                                class="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                                Select Fare
+                                            </button>
                                         </form>
                                     @else
                                         <div class="mb-4">
@@ -211,4 +211,4 @@
             </div>
         </div>
     </div>
-</x-app-layout>
+</x-public-layout>

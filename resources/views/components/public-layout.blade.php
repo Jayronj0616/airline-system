@@ -143,6 +143,29 @@
         </footer>
     </div>
     
+    <!-- SweetAlert for session messages -->
+    @if(session('success'))
+    <script>
+        Swal.fire({
+            icon: 'success',
+            title: 'Success!',
+            text: '{{ session('success') }}',
+            confirmButtonColor: '#2563eb'
+        });
+    </script>
+    @endif
+    
+    @if(session('error'))
+    <script>
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: '{{ session('error') }}',
+            confirmButtonColor: '#2563eb'
+        });
+    </script>
+    @endif
+    
     @stack('scripts')
 </body>
 </html>
