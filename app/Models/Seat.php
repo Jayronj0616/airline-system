@@ -17,11 +17,15 @@ class Seat extends Model
         'status',
         'held_at',
         'hold_expires_at',
+        'block_reason',
+        'blocked_at',
+        'blocked_by',
     ];
 
     protected $casts = [
         'held_at' => 'datetime',
         'hold_expires_at' => 'datetime',
+        'blocked_at' => 'datetime',
     ];
 
     /**
@@ -46,6 +50,65 @@ class Seat extends Model
     public function passenger()
     {
         return $this->hasOne(Passenger::class);
+    }
+
+    /**
+     * Get the user who blocked this seat.
+     */
+    public function blockedBy()
+    {
+        return $this->belongsTo(User::class, 'blocked_by');
+    }
+
+    /**
+     * Block seat for crew.
+     */
+    public function blockForCrew($userId, $reason = null)
+    {
+        $this->update([
+            'status' => 'blocked_crew',
+            'block_reason' => $reason ?? 'Reserved for crew',
+            'blocked_at' => Carbon::now(),
+            'blocked_by' => $userId,
+        ]);
+    }
+
+    /**
+     * Block seat for maintenance.
+     */
+    public function blockForMaintenance($userId, $reason = null)
+    {
+        $this->update([
+            'status' => 'blocked_maintenance',
+            'block_reason' => $reason ?? 'Under maintenance',
+            'blocked_at' => Carbon::now(),
+            'blocked_by' => $userId,
+        ]);
+    }
+
+    /**
+     * Release blocked seat.
+     */
+    public function releaseBlock()
+    {
+        if (in_array($this->status, ['blocked_crew', 'blocked_maintenance'])) {
+            $this->update([
+                'status' => 'available',
+                'block_reason' => null,
+                'blocked_at' => null,
+                'blocked_by' => null,
+            ]);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Check if seat is blocked.
+     */
+    public function isBlocked()
+    {
+        return in_array($this->status, ['blocked_crew', 'blocked_maintenance']);
     }
 
     /**

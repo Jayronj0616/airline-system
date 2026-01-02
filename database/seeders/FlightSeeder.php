@@ -165,9 +165,9 @@ class FlightSeeder extends Seeder
             for ($i = 0; $i < $flightsPerRoute; $i++) {
                 if ($flightsCreated >= $targetFlights) break;
                 
-                // Spread flights more evenly across days
+                // Spread flights more evenly across days, starting from current Manila time
                 $dayOffset = ($i * 10) + rand(0, 10); // Space out flights
-                $departureTime = Carbon::now()->addDays($dayOffset % 30)->setHour(rand(6, 22))->setMinute([0, 15, 30, 45][rand(0, 3)]);
+                $departureTime = Carbon::now('Asia/Manila')->addDays($dayOffset % 30)->setHour(rand(6, 22))->setMinute([0, 15, 30, 45][rand(0, 3)]);
                 $arrivalTime = $departureTime->copy()->addHours(floor($duration))->addMinutes(($duration - floor($duration)) * 60);
 
                 $aircraft_model = $aircraft->random();

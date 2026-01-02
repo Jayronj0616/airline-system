@@ -115,6 +115,34 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/export-csv', [DashboardController::class, 'exportCSV'])->name('dashboard.export-csv');
+    
+    // Flight Management
+    Route::resource('flights', \App\Http\Controllers\Admin\FlightController::class);
+    Route::patch('/flights/{flight}/update-status', [\App\Http\Controllers\Admin\FlightController::class, 'updateStatus'])->name('flights.update-status');
+    
+    // Seat Management
+    Route::get('/seats', [\App\Http\Controllers\Admin\SeatManagementController::class, 'index'])->name('seats.index');
+    Route::get('/seats/{flight}', [\App\Http\Controllers\Admin\SeatManagementController::class, 'show'])->name('seats.show');
+    Route::post('/seats/{seat}/block', [\App\Http\Controllers\Admin\SeatManagementController::class, 'block'])->name('seats.block');
+    Route::post('/seats/{seat}/release', [\App\Http\Controllers\Admin\SeatManagementController::class, 'release'])->name('seats.release');
+    Route::post('/seats/{flight}/bulk-block', [\App\Http\Controllers\Admin\SeatManagementController::class, 'bulkBlock'])->name('seats.bulk-block');
+    Route::post('/seats/{flight}/bulk-release', [\App\Http\Controllers\Admin\SeatManagementController::class, 'bulkRelease'])->name('seats.bulk-release');
+    Route::post('/seats/{flight}/upload-map', [\App\Http\Controllers\Admin\SeatManagementController::class, 'uploadSeatMap'])->name('seats.upload-map');
+    
+    // Booking Management
+    Route::get('/bookings', [\App\Http\Controllers\Admin\BookingManagementController::class, 'index'])->name('bookings.index');
+    Route::get('/bookings/{booking}', [\App\Http\Controllers\Admin\BookingManagementController::class, 'show'])->name('bookings.show');
+    Route::post('/bookings/{booking}/cancel', [\App\Http\Controllers\Admin\BookingManagementController::class, 'cancel'])->name('bookings.cancel');
+    Route::post('/bookings/{booking}/rebook', [\App\Http\Controllers\Admin\BookingManagementController::class, 'rebook'])->name('bookings.rebook');
+    Route::post('/bookings/{booking}/mark-paid', [\App\Http\Controllers\Admin\BookingManagementController::class, 'markAsPaid'])->name('bookings.mark-paid');
+    Route::post('/bookings/{booking}/modify', [\App\Http\Controllers\Admin\BookingManagementController::class, 'modify'])->name('bookings.modify');
+    
+    // Passenger Management
+    Route::get('/passengers', [\App\Http\Controllers\Admin\PassengerManagementController::class, 'index'])->name('passengers.index');
+    Route::get('/passengers/{passenger}', [\App\Http\Controllers\Admin\PassengerManagementController::class, 'show'])->name('passengers.show');
+    Route::get('/passengers/{passenger}/edit', [\App\Http\Controllers\Admin\PassengerManagementController::class, 'edit'])->name('passengers.edit');
+    Route::put('/passengers/{passenger}', [\App\Http\Controllers\Admin\PassengerManagementController::class, 'update'])->name('passengers.update');
+    Route::get('/passengers/{passenger}/history', [\App\Http\Controllers\Admin\PassengerManagementController::class, 'history'])->name('passengers.history');
     Route::get('/pricing', [PricingController::class, 'index'])->name('pricing.index');
     Route::get('/pricing/{flight}/edit', [PricingController::class, 'edit'])->name('pricing.edit');
     Route::patch('/pricing/{flight}', [PricingController::class, 'update'])->name('pricing.update');

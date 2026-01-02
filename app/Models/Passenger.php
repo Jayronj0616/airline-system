@@ -46,6 +46,14 @@ class Passenger extends Model
     }
 
     /**
+     * Get edit logs for this passenger.
+     */
+    public function editLogs()
+    {
+        return $this->hasMany(PassengerEditLog::class)->orderBy('created_at', 'desc');
+    }
+
+    /**
      * Get full name.
      */
     public function getFullNameAttribute()

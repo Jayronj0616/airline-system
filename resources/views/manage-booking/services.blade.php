@@ -1,19 +1,19 @@
 <x-public-layout>
-    <div class="min-h-screen bg-gray-50 py-12">
+    <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-12">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="bg-white rounded-lg shadow-md p-8">
-                <h1 class="text-3xl font-bold text-gray-900 mb-6">Add Services</h1>
-                <p class="text-gray-600 mb-8">Booking Reference: <span class="font-semibold">{{ $booking->booking_reference }}</span></p>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">Add Services</h1>
+                <p class="text-gray-600 dark:text-gray-400 mb-8">Booking Reference: <span class="font-semibold">{{ $booking->booking_reference }}</span></p>
 
                 @if($booking->addOns->count() > 0)
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                    <h3 class="font-semibold text-blue-900 mb-2">Already Added Services</h3>
-                    <ul class="text-sm text-blue-800 space-y-1">
+                <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4 mb-6">
+                    <h3 class="font-semibold text-blue-900 dark:text-blue-300 mb-2">Already Added Services</h3>
+                    <ul class="text-sm text-blue-800 dark:text-blue-300 space-y-1">
                         @foreach($booking->addOns as $addon)
                             <li>• {{ $addon->description }} ({{ $addon->quantity }}x) - ₱{{ number_format($addon->price * $addon->quantity, 2) }}</li>
                         @endforeach
                     </ul>
-                    <p class="text-xs text-blue-700 mt-2">Note: Services below that you've already added will be marked with a checkmark.</p>
+                    <p class="text-xs text-blue-700 dark:text-blue-300 mt-2">Note: Services below that you've already added will be marked with a checkmark.</p>
                 </div>
                 @endif
 
@@ -24,22 +24,22 @@
 
                     <!-- Extra Baggage -->
                     <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-gray-900 mb-4">Extra Baggage</h2>
+                        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Extra Baggage</h2>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             @foreach($prices['baggage'] as $weight => $price)
                                 @php
                                     $alreadyAdded = $booking->addOns->where('type', 'baggage')->where('description', $weight)->first();
                                 @endphp
-                                <label class="flex items-center space-x-3 p-4 border rounded-lg {{ $alreadyAdded ? 'bg-gray-50 opacity-75' : 'cursor-pointer hover:bg-gray-50' }}">
+                                <label class="flex items-center space-x-3 p-4 border dark:border-gray-600 rounded-lg {{ $alreadyAdded ? 'bg-gray-50 dark:bg-gray-700 opacity-75' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700' }}">
                                     <input type="checkbox" 
                                            @change="toggleService('baggage', '{{ $weight }}', {{ $price }})" 
                                            class="w-5 h-5 text-blue-600"
                                            {{ $alreadyAdded ? 'checked disabled' : '' }}>
                                     <div class="flex-1">
-                                        <p class="font-medium">{{ $weight }} Baggage {{ $alreadyAdded ? '✓' : '' }}</p>
-                                        <p class="text-sm text-gray-600">₱{{ number_format($price, 2) }}</p>
+                                        <p class="font-medium dark:text-white">{{ $weight }} Baggage {{ $alreadyAdded ? '✓' : '' }}</p>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400">₱{{ number_format($price, 2) }}</p>
                                         @if($alreadyAdded)
-                                            <p class="text-xs text-green-600 mt-1">Already added</p>
+                                            <p class="text-xs text-green-600 dark:text-green-400 mt-1">Already added</p>
                                         @endif
                                     </div>
                                 </label>
@@ -49,22 +49,22 @@
 
                     <!-- Meals -->
                     <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-gray-900 mb-4">Meal Selection</h2>
+                        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Meal Selection</h2>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             @foreach($prices['meal'] as $type => $price)
                                 @php
                                     $alreadyAdded = $booking->addOns->where('type', 'meal')->where('description', $type)->first();
                                 @endphp
-                                <label class="flex items-center space-x-3 p-4 border rounded-lg {{ $alreadyAdded ? 'bg-gray-50 opacity-75' : 'cursor-pointer hover:bg-gray-50' }}">
+                                <label class="flex items-center space-x-3 p-4 border dark:border-gray-600 rounded-lg {{ $alreadyAdded ? 'bg-gray-50 dark:bg-gray-700 opacity-75' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700' }}">
                                     <input type="checkbox" 
                                            @change="toggleService('meal', '{{ $type }}', {{ $price }})" 
                                            class="w-5 h-5 text-blue-600"
                                            {{ $alreadyAdded ? 'checked disabled' : '' }}>
                                     <div class="flex-1">
-                                        <p class="font-medium">{{ ucwords(str_replace('_', ' ', $type)) }} {{ $alreadyAdded ? '✓' : '' }}</p>
-                                        <p class="text-sm text-gray-600">₱{{ number_format($price, 2) }}</p>
+                                        <p class="font-medium dark:text-white">{{ ucwords(str_replace('_', ' ', $type)) }} {{ $alreadyAdded ? '✓' : '' }}</p>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400">₱{{ number_format($price, 2) }}</p>
                                         @if($alreadyAdded)
-                                            <p class="text-xs text-green-600 mt-1">Already added</p>
+                                            <p class="text-xs text-green-600 dark:text-green-400 mt-1">Already added</p>
                                         @endif
                                     </div>
                                 </label>
@@ -74,7 +74,7 @@
 
                     <!-- Seat Upgrades -->
                     <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-gray-900 mb-4">Seat Upgrades</h2>
+                        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Seat Upgrades</h2>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             @foreach($prices['seat_upgrade'] as $type => $price)
                                 @php
@@ -99,7 +99,7 @@
 
                     <!-- Other Services -->
                     <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-gray-900 mb-4">Other Services</h2>
+                        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Other Services</h2>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             @php
                                 $insuranceAdded = $booking->addOns->where('type', 'insurance')->first();
@@ -107,44 +107,44 @@
                                 $loungeAdded = $booking->addOns->where('type', 'lounge_access')->first();
                             @endphp
                             
-                            <label class="flex items-center space-x-3 p-4 border rounded-lg {{ $insuranceAdded ? 'bg-gray-50 opacity-75' : 'cursor-pointer hover:bg-gray-50' }}">
+                            <label class="flex items-center space-x-3 p-4 border dark:border-gray-600 rounded-lg {{ $insuranceAdded ? 'bg-gray-50 dark:bg-gray-700 opacity-75' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700' }}">
                                 <input type="checkbox" 
                                        @change="toggleService('insurance', 'Travel Insurance', {{ $prices['insurance'] }})" 
                                        class="w-5 h-5 text-blue-600"
                                        {{ $insuranceAdded ? 'checked disabled' : '' }}>
                                 <div class="flex-1">
-                                    <p class="font-medium">Travel Insurance {{ $insuranceAdded ? '✓' : '' }}</p>
-                                    <p class="text-sm text-gray-600">₱{{ number_format($prices['insurance'], 2) }}</p>
+                                    <p class="font-medium dark:text-white">Travel Insurance {{ $insuranceAdded ? '✓' : '' }}</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">₱{{ number_format($prices['insurance'], 2) }}</p>
                                     @if($insuranceAdded)
-                                        <p class="text-xs text-green-600 mt-1">Already added</p>
+                                        <p class="text-xs text-green-600 dark:text-green-400 mt-1">Already added</p>
                                     @endif
                                 </div>
                             </label>
                             
-                            <label class="flex items-center space-x-3 p-4 border rounded-lg {{ $priorityAdded ? 'bg-gray-50 opacity-75' : 'cursor-pointer hover:bg-gray-50' }}">
+                            <label class="flex items-center space-x-3 p-4 border dark:border-gray-600 rounded-lg {{ $priorityAdded ? 'bg-gray-50 dark:bg-gray-700 opacity-75' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700' }}">
                                 <input type="checkbox" 
                                        @change="toggleService('priority_boarding', 'Priority Boarding', {{ $prices['priority_boarding'] }})" 
                                        class="w-5 h-5 text-blue-600"
                                        {{ $priorityAdded ? 'checked disabled' : '' }}>
                                 <div class="flex-1">
-                                    <p class="font-medium">Priority Boarding {{ $priorityAdded ? '✓' : '' }}</p>
-                                    <p class="text-sm text-gray-600">₱{{ number_format($prices['priority_boarding'], 2) }}</p>
+                                    <p class="font-medium dark:text-white">Priority Boarding {{ $priorityAdded ? '✓' : '' }}</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">₱{{ number_format($prices['priority_boarding'], 2) }}</p>
                                     @if($priorityAdded)
-                                        <p class="text-xs text-green-600 mt-1">Already added</p>
+                                        <p class="text-xs text-green-600 dark:text-green-400 mt-1">Already added</p>
                                     @endif
                                 </div>
                             </label>
                             
-                            <label class="flex items-center space-x-3 p-4 border rounded-lg {{ $loungeAdded ? 'bg-gray-50 opacity-75' : 'cursor-pointer hover:bg-gray-50' }}">
+                            <label class="flex items-center space-x-3 p-4 border dark:border-gray-600 rounded-lg {{ $loungeAdded ? 'bg-gray-50 dark:bg-gray-700 opacity-75' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700' }}">
                                 <input type="checkbox" 
                                        @change="toggleService('lounge_access', 'Lounge Access', {{ $prices['lounge_access'] }})" 
                                        class="w-5 h-5 text-blue-600"
                                        {{ $loungeAdded ? 'checked disabled' : '' }}>
                                 <div class="flex-1">
-                                    <p class="font-medium">Lounge Access {{ $loungeAdded ? '✓' : '' }}</p>
-                                    <p class="text-sm text-gray-600">₱{{ number_format($prices['lounge_access'], 2) }}</p>
+                                    <p class="font-medium dark:text-white">Lounge Access {{ $loungeAdded ? '✓' : '' }}</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">₱{{ number_format($prices['lounge_access'], 2) }}</p>
                                     @if($loungeAdded)
-                                        <p class="text-xs text-green-600 mt-1">Already added</p>
+                                        <p class="text-xs text-green-600 dark:text-green-400 mt-1">Already added</p>
                                     @endif
                                 </div>
                             </label>
@@ -162,8 +162,8 @@
                     </template>
 
                     <!-- Total -->
-                    <div class="border-t border-gray-200 pt-6 mt-6">
-                        <div class="flex justify-between items-center text-xl font-bold">
+                    <div class="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6">
+                        <div class="flex justify-between items-center text-xl font-bold dark:text-white">
                             <p>Total Additional Services:</p>
                             <p x-text="'₱' + total.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></p>
                         </div>
@@ -172,7 +172,7 @@
                     <!-- Buttons -->
                     <div class="flex space-x-4 mt-8">
                         <a href="{{ route('manage-booking.show') }}?booking_reference={{ $booking->booking_reference }}&last_name={{ $booking->passengers->first()->last_name }}" 
-                           class="flex-1 bg-gray-200 text-gray-800 font-semibold py-3 px-4 rounded-lg hover:bg-gray-300 text-center">
+                           class="flex-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 font-semibold py-3 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 text-center">
                             Cancel
                         </a>
                         <button type="button" onclick="confirmAddServices()" class="flex-1 bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-blue-700">

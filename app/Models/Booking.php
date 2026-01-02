@@ -109,6 +109,14 @@ class Booking extends Model
     }
 
     /**
+     * Get booking logs.
+     */
+    public function logs()
+    {
+        return $this->hasMany(BookingLog::class)->orderBy('created_at', 'desc');
+    }
+
+    /**
      * Get the fare class for this booking.
      */
     public function fareClass()

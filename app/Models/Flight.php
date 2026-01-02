@@ -23,6 +23,9 @@ class Flight extends Model
         'base_price_economy',
         'base_price_business',
         'base_price_first',
+        'tax_percentage',
+        'booking_fee',
+        'fuel_surcharge',
         'demand_score',
         'overbooking_enabled',
         'overbooking_percentage',
@@ -35,6 +38,9 @@ class Flight extends Model
         'base_price_economy' => 'integer',
         'base_price_business' => 'integer',
         'base_price_first' => 'integer',
+        'tax_percentage' => 'decimal:2',
+        'booking_fee' => 'decimal:2',
+        'fuel_surcharge' => 'decimal:2',
         'demand_score' => 'decimal:2',
         'overbooking_enabled' => 'boolean',
         'overbooking_percentage' => 'decimal:2',
@@ -55,6 +61,22 @@ class Flight extends Model
     public function seats()
     {
         return $this->hasMany(Seat::class);
+    }
+
+    /**
+     * Get fare inventory for this flight.
+     */
+    public function fareInventory()
+    {
+        return $this->hasMany(FlightFareInventory::class);
+    }
+
+    /**
+     * Get inventory for specific fare class.
+     */
+    public function getInventoryForFareClass($fareClassId)
+    {
+        return $this->fareInventory()->where('fare_class_id', $fareClassId)->first();
     }
 
     /**

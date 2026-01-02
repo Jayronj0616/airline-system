@@ -26,8 +26,9 @@ class FlightController extends Controller
      */
     public function search(Request $request)
     {
+        // Start with base query and immediately exclude past flights
         $query = Flight::with('aircraft')
-            ->where('departure_time', '>', Carbon::now());
+            ->where('departure_time', '>', now());
 
         // Filter by origin
         if ($request->filled('origin')) {
@@ -39,10 +40,17 @@ class FlightController extends Controller
             $query->where('destination', 'LIKE', "%{$request->destination}%");
         }
 
-        // Filter by date
+        // Filter by date (only for future flights on that date)
         if ($request->filled('date')) {
             $date = Carbon::parse($request->date);
-            $query->whereDate('departure_time', $date);
+            
+            // If searching for today, only show flights after current time
+            if ($date->isToday()) {
+                $query->where('departure_time', '>', now());
+            } else {
+                // For future dates, show all flights on that date
+                $query->whereDate('departure_time', $date);
+            }
         }
         
         // Filter by departure time of day
