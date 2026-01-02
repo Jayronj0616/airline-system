@@ -21,7 +21,7 @@
                     </div>
                     @endif
 
-                    <form action="{{ route('booking.passengers.store', $booking) }}" method="POST">
+                    <form action="{{ route('booking.passengers.store', $booking) }}" method="POST" id="passengerForm">
                         @csrf
 
                         <!-- Contact Information -->
@@ -158,7 +158,7 @@
                             <a href="{{ route('flights.show', $booking->flight) }}" class="bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-2 px-4 rounded">
                                 Cancel
                             </a>
-                            <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded">
+                            <button type="button" onclick="confirmPayment()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded">
                                 Continue to Payment
                             </button>
                         </div>
@@ -167,6 +167,27 @@
             </div>
         </div>
     </div>
+
+    @push('scripts')
+    <script>
+        function confirmPayment() {
+            Swal.fire({
+                title: 'Proceed to Payment?',
+                html: '<p>Please review your passenger details before proceeding.</p><p class="font-semibold mt-2">Total: ₱{{ number_format($booking->total_price, 2) }}</p>',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, proceed!',
+                cancelButtonText: 'Review details'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('passengerForm').submit();
+                }
+            });
+        }
+    </script>
+    @endpush
 </x-app-layout>
 @else
 <x-public-layout>
@@ -185,7 +206,7 @@
                     </div>
                     @endif
 
-                    <form action="{{ route('booking.passengers.store', $booking) }}" method="POST">
+                    <form action="{{ route('booking.passengers.store', $booking) }}" method="POST" id="passengerFormGuest">
                         @csrf
 
                         <!-- Contact Information -->
@@ -322,7 +343,7 @@
                             <a href="{{ route('flights.show', $booking->flight) }}" class="bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-2 px-4 rounded">
                                 Cancel
                             </a>
-                            <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded">
+                            <button type="button" onclick="confirmPaymentGuest()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded">
                                 Continue to Payment
                             </button>
                         </div>
@@ -331,5 +352,26 @@
             </div>
         </div>
     </div>
+
+    @push('scripts')
+    <script>
+        function confirmPaymentGuest() {
+            Swal.fire({
+                title: 'Proceed to Payment?',
+                html: '<p>Please review your passenger details before proceeding.</p><p class="font-semibold mt-2">Total: ₱{{ number_format($booking->total_price, 2) }}</p>',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, proceed!',
+                cancelButtonText: 'Review details'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('passengerFormGuest').submit();
+                }
+            });
+        }
+    </script>
+    @endpush
 </x-public-layout>
 @endif

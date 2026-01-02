@@ -17,11 +17,16 @@ class PricingController extends Controller
     }
 
     /**
-     * Display pricing management page for a flight.
+     * Display all flights with pricing overview.
      */
-    public function edit(Flight $flight)
+    public function index()
     {
-        return view('admin.pricing.edit', compact('flight'));
+        $flights = Flight::with('aircraft')
+            ->where('departure_time', '>', now())
+            ->orderBy('departure_time')
+            ->paginate(20);
+
+        return view('admin.pricing.index', compact('flights'));
     }
 
     /**
@@ -41,21 +46,8 @@ class PricingController extends Controller
         $this->pricingService->updateFlightPrices($flight);
 
         return redirect()
-            ->route('admin.pricing.edit', $flight)
+            ->route('admin.pricing.index')
             ->with('success', 'Base fares updated successfully. Prices have been recalculated.');
-    }
-
-    /**
-     * Display all flights with pricing overview.
-     */
-    public function index()
-    {
-        $flights = Flight::with('aircraft')
-            ->where('departure_time', '>', now())
-            ->orderBy('departure_time')
-            ->paginate(20);
-
-        return view('admin.pricing.index', compact('flights'));
     }
 
     /**

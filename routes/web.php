@@ -10,21 +10,11 @@ use App\Http\Controllers\Admin\OverbookingController;
 use App\Http\Controllers\Admin\OverbookingReportsController;
 use App\Http\Controllers\Admin\FareRulesController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\Admin\ReportsController;
 use Illuminate\Support\Facades\Route;
 
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "web" middleware group. Make something great!
-|
-*/
-
 Route::get('/', [\App\Http\Controllers\HomeController::class, 'index'])->name('home');
-
 
 Route::get('/dashboard', function () {
     return view('dashboard');
@@ -35,21 +25,17 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     
-    // Booking History
     Route::get('/profile/booking-history', [ProfileController::class, 'bookingHistory'])->name('profile.booking-history');
     Route::get('/profile/booking-history/download', [ProfileController::class, 'downloadBookingHistory'])->name('profile.booking-history.download');
     Route::get('/profile/booking-history/export', [ProfileController::class, 'exportBookingHistory'])->name('profile.booking-history.export');
     
-    // Favorite Routes
     Route::post('/profile/favorite-routes/add', [ProfileController::class, 'addFavoriteRoute'])->name('profile.favorite-routes.add');
     Route::delete('/profile/favorite-routes/remove', [ProfileController::class, 'removeFavoriteRoute'])->name('profile.favorite-routes.remove');
 });
 
-// Public flight routes
 Route::get('/flights/search', [FlightController::class, 'search'])->name('flights.search');
 Route::get('/flights/{flight}', [FlightController::class, 'show'])->name('flights.show');
 
-// Booking flow (guest accessible)
 Route::prefix('booking')->name('booking.')->group(function () {
     Route::post('/review-fare', [\App\Http\Controllers\BookingFlowController::class, 'reviewFare'])->name('review-fare');
     Route::post('/create-draft', [\App\Http\Controllers\BookingFlowController::class, 'createDraft'])->name('create-draft');
@@ -60,7 +46,6 @@ Route::prefix('booking')->name('booking.')->group(function () {
     Route::get('/{booking}/confirmation', [\App\Http\Controllers\BookingFlowController::class, 'confirmation'])->name('confirmation');
     Route::get('/{booking}', [\App\Http\Controllers\BookingFlowController::class, 'show'])->name('show');
     
-    // Authenticated only
     Route::middleware('auth')->group(function () {
         Route::get('/', [\App\Http\Controllers\BookingFlowController::class, 'index'])->name('index');
         Route::get('/{booking}/select-seats', [\App\Http\Controllers\BookingFlowController::class, 'selectSeats'])->name('select-seats');
@@ -70,29 +55,22 @@ Route::prefix('booking')->name('booking.')->group(function () {
     });
 });
 
-// OLD ROUTES - Redirect to new booking flow
 Route::redirect('/bookings', '/booking')->name('bookings.index');
 Route::get('/bookings/{booking}', function($booking) {
     return redirect('/booking/' . $booking);
 })->name('bookings.show');
 
-// Flight Status routes
 Route::get('/flight-status', [\App\Http\Controllers\FlightStatusController::class, 'index'])->name('flight-status.index');
 Route::get('/flight-status/search', [\App\Http\Controllers\FlightStatusController::class, 'search'])->name('flight-status.search');
 Route::get('/flight-status/{flight}', [\App\Http\Controllers\FlightStatusController::class, 'show'])->name('flight-status.show');
 
-// Price Calendar
 Route::get('/price-calendar', [\App\Http\Controllers\PriceCalendarController::class, 'show'])->name('price-calendar.show');
 
-// Old booking routes removed - using new booking flow only
-
-//email
 Route::get('/send-test-email', function () {
     Mail::to('loki071723@gmail.com')->send(new TestEmail());
     return 'Test email sent!';
 });
 
-// Manage Booking routes (guest access)
 Route::prefix('manage-booking')->name('manage-booking.')->group(function () {
     Route::get('/', [\App\Http\Controllers\ManageBookingController::class, 'retrieve'])->name('retrieve');
     Route::post('/show', [\App\Http\Controllers\ManageBookingController::class, 'show'])->name('show');
@@ -108,19 +86,13 @@ Route::prefix('manage-booking')->name('manage-booking.')->group(function () {
     Route::post('/edit-contact', [\App\Http\Controllers\ManageBookingController::class, 'updateContact'])->name('update-contact');
 });
 
-
-
-// Admin routes
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
-    // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/export-csv', [DashboardController::class, 'exportCSV'])->name('dashboard.export-csv');
     
-    // Flight Management
     Route::resource('flights', \App\Http\Controllers\Admin\FlightController::class);
     Route::patch('/flights/{flight}/update-status', [\App\Http\Controllers\Admin\FlightController::class, 'updateStatus'])->name('flights.update-status');
     
-    // Seat Management
     Route::get('/seats', [\App\Http\Controllers\Admin\SeatManagementController::class, 'index'])->name('seats.index');
     Route::get('/seats/{flight}', [\App\Http\Controllers\Admin\SeatManagementController::class, 'show'])->name('seats.show');
     Route::post('/seats/{seat}/block', [\App\Http\Controllers\Admin\SeatManagementController::class, 'block'])->name('seats.block');
@@ -129,7 +101,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/seats/{flight}/bulk-release', [\App\Http\Controllers\Admin\SeatManagementController::class, 'bulkRelease'])->name('seats.bulk-release');
     Route::post('/seats/{flight}/upload-map', [\App\Http\Controllers\Admin\SeatManagementController::class, 'uploadSeatMap'])->name('seats.upload-map');
     
-    // Booking Management
     Route::get('/bookings', [\App\Http\Controllers\Admin\BookingManagementController::class, 'index'])->name('bookings.index');
     Route::get('/bookings/{booking}', [\App\Http\Controllers\Admin\BookingManagementController::class, 'show'])->name('bookings.show');
     Route::post('/bookings/{booking}/cancel', [\App\Http\Controllers\Admin\BookingManagementController::class, 'cancel'])->name('bookings.cancel');
@@ -137,22 +108,26 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/bookings/{booking}/mark-paid', [\App\Http\Controllers\Admin\BookingManagementController::class, 'markAsPaid'])->name('bookings.mark-paid');
     Route::post('/bookings/{booking}/modify', [\App\Http\Controllers\Admin\BookingManagementController::class, 'modify'])->name('bookings.modify');
     
-    // Passenger Management
     Route::get('/passengers', [\App\Http\Controllers\Admin\PassengerManagementController::class, 'index'])->name('passengers.index');
     Route::get('/passengers/{passenger}', [\App\Http\Controllers\Admin\PassengerManagementController::class, 'show'])->name('passengers.show');
     Route::get('/passengers/{passenger}/edit', [\App\Http\Controllers\Admin\PassengerManagementController::class, 'edit'])->name('passengers.edit');
     Route::put('/passengers/{passenger}', [\App\Http\Controllers\Admin\PassengerManagementController::class, 'update'])->name('passengers.update');
     Route::get('/passengers/{passenger}/history', [\App\Http\Controllers\Admin\PassengerManagementController::class, 'history'])->name('passengers.history');
+    
+    Route::resource('add-ons', \App\Http\Controllers\Admin\AddOnManagementController::class);
+    Route::post('/add-ons/{addOn}/toggle-active', [\App\Http\Controllers\Admin\AddOnManagementController::class, 'toggleActive'])->name('add-ons.toggle-active');
+    Route::post('/add-ons/{addOn}/add-availability', [\App\Http\Controllers\Admin\AddOnManagementController::class, 'addAvailability'])->name('add-ons.add-availability');
+    Route::delete('/add-ons-availability/{availability}', [\App\Http\Controllers\Admin\AddOnManagementController::class, 'removeAvailability'])->name('add-ons.remove-availability');
+    Route::post('/add-ons-availability/{availability}/toggle', [\App\Http\Controllers\Admin\AddOnManagementController::class, 'toggleAvailability'])->name('add-ons.toggle-availability');
+    
+    // Pricing - Modal-based (no edit route needed)
     Route::get('/pricing', [PricingController::class, 'index'])->name('pricing.index');
-    Route::get('/pricing/{flight}/edit', [PricingController::class, 'edit'])->name('pricing.edit');
     Route::patch('/pricing/{flight}', [PricingController::class, 'update'])->name('pricing.update');
     Route::post('/pricing/{flight}/recalculate', [PricingController::class, 'recalculate'])->name('pricing.recalculate');
     Route::post('/pricing/recalculate-all', [PricingController::class, 'recalculateAll'])->name('pricing.recalculate-all');
     
-    // Demand Analytics
     Route::get('/demand', [DemandController::class, 'index'])->name('demand.index');
     
-    // Overbooking Management
     Route::get('/overbooking', [OverbookingController::class, 'index'])->name('overbooking.index');
     Route::get('/overbooking/reports', [OverbookingReportsController::class, 'index'])->name('overbooking.reports');
     Route::get('/overbooking/reports/export', [OverbookingReportsController::class, 'export'])->name('overbooking.reports.export');
@@ -164,13 +139,29 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/overbooking/at-risk', [OverbookingController::class, 'atRisk'])->name('overbooking.at-risk');
     Route::post('/overbooking/recalculate-all', [OverbookingController::class, 'recalculateAll'])->name('overbooking.recalculate-all');
     
-    // Fare Rules Management
     Route::get('/fare-rules', [FareRulesController::class, 'index'])->name('fare-rules.index');
     Route::get('/fare-rules/{fareClass}/edit', [FareRulesController::class, 'edit'])->name('fare-rules.edit');
     Route::patch('/fare-rules/{fareClass}', [FareRulesController::class, 'update'])->name('fare-rules.update');
     
-    // Advanced Analytics
     Route::get('/analytics', [\App\Http\Controllers\Admin\AnalyticsController::class, 'index'])->name('analytics.index');
+    
+    // Reports
+    Route::get('/reports', [ReportsController::class, 'index'])->name('reports.index');
+    Route::get('/reports/export-bookings', [ReportsController::class, 'exportBookings'])->name('reports.export-bookings');
+    Route::get('/reports/export-revenue', [ReportsController::class, 'exportRevenue'])->name('reports.export-revenue');
+    Route::get('/reports/export-addons', [ReportsController::class, 'exportAddons'])->name('reports.export-addons');
+    
+    // User Management
+    Route::get('/users', [UserManagementController::class, 'index'])->name('users.index');
+    Route::get('/users/create', [UserManagementController::class, 'create'])->name('users.create');
+    Route::post('/users', [UserManagementController::class, 'store'])->name('users.store');
+    Route::get('/users/{user}', [UserManagementController::class, 'show'])->name('users.show');
+    Route::get('/users/{user}/edit', [UserManagementController::class, 'edit'])->name('users.edit');
+    Route::put('/users/{user}', [UserManagementController::class, 'update'])->name('users.update');
+    Route::post('/users/{user}/update-role', [UserManagementController::class, 'updateRole'])->name('users.update-role');
+    Route::post('/users/{user}/disable', [UserManagementController::class, 'disable'])->name('users.disable');
+    Route::post('/users/{user}/enable', [UserManagementController::class, 'enable'])->name('users.enable');
+    Route::get('/users/{user}/audit-logs', [UserManagementController::class, 'auditLogs'])->name('users.audit-logs');
 });
 
 require __DIR__.'/auth.php';

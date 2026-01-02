@@ -12,16 +12,16 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'name',
         'email',
         'password',
         'role',
+        'admin_role',
+        'is_active',
+        'disabled_at',
+        'disabled_by',
+        'disabled_reason',
         'phone',
         'date_of_birth',
         'passport_number',
@@ -33,55 +33,110 @@ class User extends Authenticatable
         'favorite_routes',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
         'date_of_birth' => 'date',
+        'disabled_at' => 'datetime',
         'favorite_routes' => 'array',
+        'is_active' => 'boolean',
     ];
 
-    /**
-     * Get all bookings for this user.
-     */
+    // Relationships
     public function bookings()
     {
         return $this->hasMany(Booking::class);
     }
 
-    /**
-     * Get saved payment methods.
-     */
     public function savedPaymentMethods()
     {
         return $this->hasMany(SavedPaymentMethod::class);
     }
 
-    /**
-     * Get default payment method.
-     */
     public function defaultPaymentMethod()
     {
         return $this->hasOne(SavedPaymentMethod::class)->where('is_default', true);
     }
 
-    /**
-     * Get confirmed bookings (past trips).
-     */
+    public function auditLogs()
+    {
+        return $this->hasMany(UserAuditLog::class);
+    }
+
+    public function performedAudits()
+    {
+        return $this->hasMany(UserAuditLog::class, 'performed_by');
+    }
+
+    public function disabledBy()
+    {
+        return $this->belongsTo(User::class, 'disabled_by');
+    }
+
+    // Scopes
+    public function scopeAdmins($query)
+    {
+        return $query->where('role', 'admin');
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    public function scopeDisabled($query)
+    {
+        return $query->where('is_active', false);
+    }
+
+    // Helper methods
+    public function isAdmin()
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isSuperAdmin()
+    {
+        return $this->role === 'admin' && $this->admin_role === 'super_admin';
+    }
+
+    public function canManageUsers()
+    {
+        return $this->isSuperAdmin();
+    }
+
+    public function canManageFlights()
+    {
+        return $this->isAdmin() && in_array($this->admin_role, ['super_admin', 'operations']);
+    }
+
+    public function canManagePricing()
+    {
+        return $this->isAdmin() && in_array($this->admin_role, ['super_admin', 'finance']);
+    }
+
+    public function canViewReports()
+    {
+        return $this->isAdmin();
+    }
+
+    public function getAdminRoleNameAttribute()
+    {
+        return match($this->admin_role) {
+            'super_admin' => 'Super Admin',
+            'operations' => 'Operations',
+            'finance' => 'Finance',
+            'support' => 'Support',
+            default => 'N/A',
+        };
+    }
+
+    // Previous methods
     public function pastTrips()
     {
         return $this->bookings()
@@ -93,9 +148,6 @@ class User extends Authenticatable
             ->orderBy('created_at', 'desc');
     }
 
-    /**
-     * Get upcoming bookings.
-     */
     public function upcomingTrips()
     {
         return $this->bookings()
@@ -107,9 +159,6 @@ class User extends Authenticatable
             ->orderBy('created_at', 'desc');
     }
 
-    /**
-     * Get user statistics.
-     */
     public function getStatistics()
     {
         $confirmedBookings = $this->bookings()
@@ -119,7 +168,6 @@ class User extends Authenticatable
 
         $totalFlights = $confirmedBookings->count();
         
-        // Calculate total distance (estimated)
         $totalMiles = $confirmedBookings->sum(function($booking) {
             return $this->estimateDistance(
                 $booking->flight->origin,
@@ -127,13 +175,10 @@ class User extends Authenticatable
             );
         });
 
-        // Unique countries and cities visited
         $destinations = $confirmedBookings->pluck('flight.destination')->unique();
         $origins = $confirmedBookings->pluck('flight.origin')->unique();
         $uniqueCities = $destinations->merge($origins)->unique()->count();
-
-        // Estimate countries (simplified - in real app, use proper mapping)
-        $uniqueCountries = ceil($uniqueCities / 3); // Rough estimate
+        $uniqueCountries = ceil($uniqueCities / 3);
 
         return [
             'total_flights' => $totalFlights,
@@ -145,14 +190,8 @@ class User extends Authenticatable
         ];
     }
 
-    /**
-     * Estimate distance between two airports (simplified).
-     * In production, use actual airport coordinates and haversine formula.
-     */
     private function estimateDistance($origin, $destination)
     {
-        // Simplified estimation based on airport codes
-        // In production, use actual lat/long coordinates
         $distances = [
             'MNL-HKG' => 700,
             'MNL-SIN' => 1500,
@@ -164,12 +203,9 @@ class User extends Authenticatable
         $key = $origin . '-' . $destination;
         $reverseKey = $destination . '-' . $origin;
 
-        return $distances[$key] ?? $distances[$reverseKey] ?? 1000; // Default 1000 miles
+        return $distances[$key] ?? $distances[$reverseKey] ?? 1000;
     }
 
-    /**
-     * Add route to favorites.
-     */
     public function addFavoriteRoute($origin, $destination)
     {
         $favorites = $this->favorite_routes ?? [];
@@ -181,9 +217,6 @@ class User extends Authenticatable
         }
     }
 
-    /**
-     * Remove route from favorites.
-     */
     public function removeFavoriteRoute($origin, $destination)
     {
         $favorites = $this->favorite_routes ?? [];

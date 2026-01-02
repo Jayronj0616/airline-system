@@ -17,8 +17,10 @@ class FlightController extends Controller
         $flights = Flight::with('aircraft')
             ->orderBy('departure_time', 'desc')
             ->paginate(20);
+        
+        $aircraft = Aircraft::all();
             
-        return view('admin.flights.index', compact('flights'));
+        return view('admin.flights.index', compact('flights', 'aircraft'));
     }
 
     public function create()

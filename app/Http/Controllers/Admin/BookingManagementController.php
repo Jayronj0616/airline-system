@@ -13,13 +13,20 @@ class BookingManagementController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Booking::with(['flight', 'user', 'fareClass', 'passengers']);
+        $query = Booking::with([
+            'flight:id,flight_number,origin,destination,departure_time',
+            'user:id,name,email',
+            'fareClass:id,name',
+            'passengers:id,booking_id,first_name,last_name'
+        ]);
 
         // Search filters
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('booking_reference', 'like', "%{$search}%")
+                  ->orWhere('contact_name', 'like', "%{$search}%")
+                  ->orWhere('contact_email', 'like', "%{$search}%")
                   ->orWhereHas('passengers', function($q) use ($search) {
                       $q->where('first_name', 'like', "%{$search}%")
                         ->orWhere('last_name', 'like', "%{$search}%");
@@ -195,7 +202,7 @@ class BookingManagementController extends Controller
             'reason' => 'required|string|max:500',
         ]);
 
-        if ($booking->status === 'confirmed') {
+        if ($booking->status === 'confirmed' || $booking->status === 'confirmed_paid') {
             return back()->with('error', 'Booking is already confirmed/paid');
         }
 
@@ -204,7 +211,7 @@ class BookingManagementController extends Controller
             $oldData = ['status' => $booking->status];
 
             $booking->update([
-                'status' => 'confirmed',
+                'status' => 'confirmed_paid',
                 'confirmed_at' => now(),
             ]);
 
@@ -214,7 +221,7 @@ class BookingManagementController extends Controller
                 'marked_paid',
                 "Booking manually marked as paid by admin: {$validated['reason']}",
                 $oldData,
-                ['status' => 'confirmed']
+                ['status' => 'confirmed_paid']
             );
 
             DB::commit();

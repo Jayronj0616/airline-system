@@ -12,6 +12,7 @@ class BookingAddOn extends Model
     protected $fillable = [
         'booking_id',
         'passenger_id',
+        'add_on_id',
         'type',
         'description',
         'price',
@@ -37,6 +38,14 @@ class BookingAddOn extends Model
     public function passenger()
     {
         return $this->belongsTo(Passenger::class);
+    }
+
+    /**
+     * Get the add-on.
+     */
+    public function addOn()
+    {
+        return $this->belongsTo(AddOn::class);
     }
 
     /**

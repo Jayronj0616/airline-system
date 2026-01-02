@@ -335,7 +335,7 @@
             @endif
 
             <!-- Flight Performance Table (Task 4) -->
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+            <div id="flight-performance-section" class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-semibold">Flight Performance</h3>
@@ -403,6 +403,11 @@
                                 @endforeach
                             </tbody>
                         </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <div class="mt-4">
+                        {{ $flightPerformance->appends(request()->query())->links() }}
                     </div>
                 </div>
             </div>
@@ -650,6 +655,16 @@
                             }
                         }
                     }
+                }
+            });
+        @endif
+
+        // Scroll to flight performance section if page parameter exists
+        @if(request()->has('page'))
+            document.addEventListener('DOMContentLoaded', function() {
+                const section = document.getElementById('flight-performance-section');
+                if (section) {
+                    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             });
         @endif

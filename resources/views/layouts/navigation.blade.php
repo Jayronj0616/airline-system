@@ -5,41 +5,44 @@
             <div class="flex">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}">
+                    <a href="{{ Auth::check() && Auth::user()->role === 'admin' ? route('admin.dashboard') : route('home') }}">
                         <x-application-logo class="block h-9 w-auto fill-current text-gray-800 dark:text-gray-200" />
                     </a>
                 </div>
 
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                    @if(Auth::check() && Auth::user()->role === 'admin')
+                    <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
-                    @if(Auth::check() && Auth::user()->role !== 'admin')
+                    <x-nav-link :href="route('admin.flights.index')" :active="request()->routeIs('admin.flights.*')">
+                        {{ __('Flights') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('admin.bookings.index')" :active="request()->routeIs('admin.bookings.*')">
+                        {{ __('Bookings') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('admin.pricing.index')" :active="request()->routeIs('admin.pricing.*')">
+                        {{ __('Pricing') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('admin.reports.index')" :active="request()->routeIs('admin.reports.*')">
+                        {{ __('Reports') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
+                        {{ __('Users') }}
+                    </x-nav-link>
+                    @else
                     <x-nav-link :href="route('flights.search')" :active="request()->routeIs('flights.*')">
                         {{ __('Flights') }}
                     </x-nav-link>
                     <x-nav-link :href="route('manage-booking.retrieve')" :active="request()->routeIs('manage-booking.*')">
                         {{ __('Manage Booking') }}
                     </x-nav-link>
-                    @endif
                     <x-nav-link :href="route('flight-status.index')" :active="request()->routeIs('flight-status.*')">
                         {{ __('Flight Status') }}
                     </x-nav-link>
-                    @if(Auth::check() && Auth::user()->role !== 'admin')
                     <x-nav-link :href="route('price-calendar.show')" :active="request()->routeIs('price-calendar.*')">
                         {{ __('Price Calendar') }}
-                    </x-nav-link>
-                    @endif
-                    @if(Auth::check() && Auth::user()->role === 'admin')
-                    <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
-                        {{ __('Admin Dashboard') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('admin.pricing.index')" :active="request()->routeIs('admin.pricing.*')">
-                        {{ __('Pricing') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('admin.demand.index')" :active="request()->routeIs('admin.demand.*')">
-                        {{ __('Demand Analytics') }}
                     </x-nav-link>
                     @endif
                 </div>
@@ -104,34 +107,37 @@
     <!-- Responsive Navigation Menu -->
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+            @if(Auth::check() && Auth::user()->role === 'admin')
+            <x-responsive-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
-            @if(Auth::check() && Auth::user()->role !== 'admin')
+            <x-responsive-nav-link :href="route('admin.flights.index')" :active="request()->routeIs('admin.flights.*')">
+                {{ __('Flights') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('admin.bookings.index')" :active="request()->routeIs('admin.bookings.*')">
+                {{ __('Bookings') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('admin.pricing.index')" :active="request()->routeIs('admin.pricing.*')">
+                {{ __('Pricing') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('admin.reports.index')" :active="request()->routeIs('admin.reports.*')">
+                {{ __('Reports') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
+                {{ __('Users') }}
+            </x-responsive-nav-link>
+            @else
             <x-responsive-nav-link :href="route('flights.search')" :active="request()->routeIs('flights.*')">
                 {{ __('Flights') }}
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('manage-booking.retrieve')" :active="request()->routeIs('manage-booking.*')">
                 {{ __('Manage Booking') }}
             </x-responsive-nav-link>
-            @endif
             <x-responsive-nav-link :href="route('flight-status.index')" :active="request()->routeIs('flight-status.*')">
                 {{ __('Flight Status') }}
             </x-responsive-nav-link>
-            @if(Auth::check() && Auth::user()->role !== 'admin')
             <x-responsive-nav-link :href="route('price-calendar.show')" :active="request()->routeIs('price-calendar.*')">
                 {{ __('Price Calendar') }}
-            </x-responsive-nav-link>
-            @endif
-            @if(Auth::check() && Auth::user()->role === 'admin')
-            <x-responsive-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
-                {{ __('Admin Dashboard') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('admin.pricing.index')" :active="request()->routeIs('admin.pricing.*')">
-                {{ __('Pricing') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('admin.demand.index')" :active="request()->routeIs('admin.demand.*')">
-                {{ __('Demand Analytics') }}
             </x-responsive-nav-link>
             @endif
         </div>
