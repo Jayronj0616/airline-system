@@ -28,7 +28,7 @@ A full-featured airline booking and revenue management system with dynamic prici
 ### 1. Clone the Repository
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/Jayronj0616/airline-system.git
 cd airline-system
 ```
 
